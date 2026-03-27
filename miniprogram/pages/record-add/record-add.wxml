@@ -1,0 +1,32 @@
+<!--pages/record-add/record-add.wxml-->
+<view class="container">
+  <view class="form-container">
+    <view class="form-item">
+      <text class="label">身高 (cm)</text>
+      <input class="input" type="digit" placeholder="请输入身高" placeholder-class="placeholder" bindinput="onInput" data-field="height" value="{{formData.height}}" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">体重 (kg)</text>
+      <input class="input" type="digit" placeholder="请输入体重" placeholder-class="placeholder" bindinput="onInput" data-field="weight" value="{{formData.weight}}" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">录入时间</text>
+      <picker mode="date" value="{{formData.recordDate}}" end="{{currentDate}}" bindchange="onDateChange">
+        <view class="picker-view {{!formData.recordDate ? 'placeholder' : ''}}">
+          {{formData.recordDate || '请选择录入时间'}}
+        </view>
+      </picker>
+    </view>
+    
+    <view class="info-item" wx:if="{{calculatedAge}}">
+      <text class="info-label">宝宝当前年龄：</text>
+      <text class="info-value">{{calculatedAge}}</text>
+    </view>
+  </view>
+
+  <view class="bottom-area">
+    <button class="submit-btn" bindtap="submitForm">保存记录</button>
+  </view>
+</view>

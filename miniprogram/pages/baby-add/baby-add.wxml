@@ -1,0 +1,44 @@
+<!--pages/baby-add/baby-add.wxml-->
+<view class="container">
+  <view class="form-container">
+    <view class="form-item">
+      <text class="label">宝宝姓名</text>
+      <input class="input" placeholder="请输入宝宝姓名" placeholder-class="placeholder" bindinput="onInput" data-field="name" value="{{formData.name}}" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">性别</text>
+      <radio-group class="radio-group" bindchange="onGenderChange">
+        <label class="radio-label">
+          <radio value="male" checked="{{formData.gender === 'male'}}" color="#87CEEB"/> 男孩
+        </label>
+        <label class="radio-label">
+          <radio value="female" checked="{{formData.gender === 'female'}}" color="#FFB6C1"/> 女孩
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="form-item">
+      <text class="label">出生日期</text>
+      <picker mode="date" value="{{formData.birthDate}}" end="{{currentDate}}" bindchange="onDateChange">
+        <view class="picker-view {{!formData.birthDate ? 'placeholder' : ''}}">
+          {{formData.birthDate || '请选择出生日期'}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="label">出生身高 (cm)</text>
+      <input class="input" type="digit" placeholder="请输入出生身高" placeholder-class="placeholder" bindinput="onInput" data-field="birthHeight" value="{{formData.birthHeight}}" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">出生体重 (kg)</text>
+      <input class="input" type="digit" placeholder="请输入出生体重" placeholder-class="placeholder" bindinput="onInput" data-field="birthWeight" value="{{formData.birthWeight}}" />
+    </view>
+  </view>
+
+  <view class="bottom-area">
+    <button class="submit-btn" bindtap="submitForm">完成</button>
+  </view>
+</view>

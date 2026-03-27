@@ -1,0 +1,259 @@
+/* pages/baby-detail/baby-detail.wxss */
+.container {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  padding: 40rpx 30rpx;
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.avatar-container {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  margin-right: 30rpx;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 60rpx;
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 4rpx solid var(--white);
+}
+
+.avatar-edit-icon {
+  position: absolute;
+  right: -4rpx;
+  bottom: -4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background-color: var(--white);
+  color: var(--primary-color);
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  line-height: 1;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.name {
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.age {
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+.nav-tabs {
+  display: flex;
+  background-color: var(--white);
+  padding: 0 20rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 10;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 30rpx;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.tab.active {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 6rpx;
+  background-color: var(--primary-color);
+  border-radius: 6rpx;
+}
+
+.action-bar {
+  padding: 30rpx 30rpx 10rpx;
+}
+
+.add-btn {
+  background-color: var(--white);
+  color: var(--primary-color);
+  border: 2rpx solid var(--primary-color);
+  border-radius: 40rpx;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  font-weight: 500;
+  text-align: center;
+  line-height: normal;
+}
+
+.content-area {
+  flex: 1;
+  padding: 10rpx 20rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Records List */
+.empty-state {
+  padding: 100rpx 0;
+  text-align: center;
+}
+
+.empty-text {
+  color: var(--text-light);
+  font-size: 28rpx;
+}
+
+.record-list {
+  padding-bottom: 40rpx;
+}
+
+.record-card {
+  background-color: var(--white);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  position: relative;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}
+
+.record-data {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.data-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.data-label {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  margin-right: 12rpx;
+}
+
+.data-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: var(--success);
+}
+
+.unit {
+  font-size: 24rpx;
+  font-weight: normal;
+  margin-left: 4rpx;
+}
+
+.data-divider {
+  width: 2rpx;
+  height: 30rpx;
+  background-color: #E0E0E0;
+  margin: 0 40rpx;
+}
+
+.record-meta {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+.time {
+  margin-right: 20rpx;
+}
+
+.delete-btn {
+  position: absolute;
+  right: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24rpx;
+  color: var(--danger);
+  padding: 10rpx 20rpx;
+  background-color: rgba(232, 92, 92, 0.1);
+  border-radius: 30rpx;
+}
+
+/* Charts */
+.chart-container {
+  width: 100%;
+  flex: 1;
+  min-height: 600rpx;
+  background-color: var(--white);
+  border-radius: 20rpx;
+  padding: 20rpx 0;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  margin-top: 10rpx;
+  position: relative;
+  overflow: visible;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  margin-top: 30rpx;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 0 20rpx;
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.color-box {
+  width: 20rpx;
+  height: 6rpx;
+  border-radius: 4rpx;
+  margin-right: 10rpx;
+}
+
+.color-box.standard {
+  background-color: #4169E1;
+}
+
+.color-box.actual {
+  background-color: #32CD32;
+}
+
+ec-canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}

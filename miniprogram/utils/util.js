@@ -1,0 +1,54 @@
+const formatTime = date => {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${year}/${month}/${day}`
+}
+
+const calculateAge = (birthDate, currentDate = new Date()) => {
+  const birth = new Date(birthDate)
+  const current = new Date(currentDate)
+  
+  let years = current.getFullYear() - birth.getFullYear()
+  let months = current.getMonth() - birth.getMonth()
+  let days = current.getDate() - birth.getDate()
+  
+  if (days < 0) {
+    months--
+    const lastMonth = new Date(current.getFullYear(), current.getMonth(), 0)
+    days += lastMonth.getDate()
+  }
+  
+  if (months < 0) {
+    years--
+    months += 12
+  }
+  
+  return { years, months, days }
+}
+
+const calculateAgeInMonths = (birthDate, currentDate = new Date()) => {
+  const { years, months, days } = calculateAge(birthDate, currentDate)
+  // simple approximation: 1 month if days > 15
+  let totalMonths = years * 12 + months
+  if (days >= 15) {
+    totalMonths += 0.5
+  }
+  return totalMonths
+}
+
+const formatAgeString = ({ years, months, days }) => {
+  if (years === 0 && months === 0 && days === 0) return '刚出生'
+  let str = ''
+  if (years > 0) str += `${years}岁`
+  if (months > 0) str += `${months}月`
+  if (days > 0) str += `${days}天`
+  return str
+}
+
+module.exports = {
+  formatTime,
+  calculateAge,
+  calculateAgeInMonths,
+  formatAgeString
+}

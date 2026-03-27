@@ -1,0 +1,58 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="header-decoration">
+      <view class="circle circle-1"></view>
+      <view class="circle circle-2"></view>
+      <view class="circle circle-3"></view>
+      <view class="leaf leaf-1"></view>
+      <view class="leaf leaf-2"></view>
+    </view>
+    <view class="title-area">
+      <view class="icon-wrapper">
+        <text class="main-icon">🌱</text>
+      </view>
+      <text class="title">宝宝助手</text>
+      <text class="subtitle" wx:if="{{babies.length > 0}}">我的宝宝（共 {{babies.length}} 位）</text>
+      <text class="subtitle" wx:else>还没有宝宝，快去添加吧～</text>
+    </view>
+  </view>
+
+  <view class="list-area">
+    <view class="empty-state" wx:if="{{babies.length === 0}}">
+      <text class="emoji">👶</text>
+      <text class="empty-text">还没有宝宝信息</text>
+      <text class="empty-subtext">点击"添加宝宝"开始记录成长</text>
+      <button class="add-first-btn" bindtap="goToAddBaby">🍼 添加宝宝</button>
+    </view>
+
+    <block wx:else>
+      <view class="baby-card" wx:for="{{babies}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+        <view class="card-content">
+          <image class="avatar" src="{{item.avatarUrl || '/images/avatar.png'}}" mode="aspectFill"></image>
+          <view class="baby-info">
+            <view class="name-row">
+              <text class="name">{{item.name}}</text>
+              <text class="gender {{item.gender === 'male' ? 'male' : 'female'}}">{{item.gender === 'male' ? '♂' : '♀'}}</text>
+            </view>
+            <view class="info-row">
+              <text class="info-label">年龄：<text class="highlight">{{item.ageStr}}</text></text>
+            </view>
+            <view class="info-row" wx:if="{{item.latestRecord}}">
+              <text class="info-label">身高：<text class="highlight">{{item.latestRecord.height}}</text> cm</text>
+              <text class="info-label">体重：<text class="highlight">{{item.latestRecord.weight}}</text> kg</text>
+            </view>
+          </view>
+          <view class="delete-btn" catchtap="deleteBaby" data-id="{{item._id}}">
+            <image class="delete-icon" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTE5IDdMMTguMTMyNyAxOS4xNDI1QzE4LjA1NzkgMjAuMTg5MSAxNy4xODcwIDIxIDE2LjEzNzggMjFINC44NjIyNEM2LjgxMjk2IDIxIDUuOTQyMDggMjAuMTg5MSA1Ljg2NzMyIDE5LjE0MjVMNSA3TTEwIDExVjE3TTE0IDExVjE3TTE1IDdWNEMxNSAzLjQ0NzcyIDE0LjU1MjMgMyAxNCAzSDEwQzkuNDQ3NzIgMyA5IDMuNDQ3NzIgOSA0VjdNNCA3SDIwIiBzdHJva2U9IiNFODVDNUMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+"></image>
+          </view>
+        </view>
+      </view>
+
+      <view class="add-more-card" wx:if="{{babies.length < 4}}" bindtap="goToAddBaby">
+        <text class="plus-icon-large">+</text>
+        <text>添加宝宝（还可添加 {{4 - babies.length}} 个）</text>
+      </view>
+    </block>
+  </view>
+</view>

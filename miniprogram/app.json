@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/baby-add/baby-add",
+    "pages/baby-detail/baby-detail",
+    "pages/record-add/record-add"
+  ],
+  "window": {
+    "backgroundColor": "#F7F7F8",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#81C784",
+    "navigationBarTitleText": "宝宝助手",
+    "navigationBarTextStyle": "white"
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

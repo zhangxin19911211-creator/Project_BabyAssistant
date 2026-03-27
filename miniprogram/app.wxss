@@ -1,0 +1,45 @@
+/**app.wxss**/
+page {
+  --primary-color: #81C784;
+  --primary-light: rgba(129, 199, 132, 0.2);
+  --secondary-color: #A5D6A7;
+  --text-main: #333333;
+  --text-secondary: #666666;
+  --text-light: #999999;
+  --bg-color: #F7F7F8;
+  --white: #FFFFFF;
+  --success: #32CD32;
+  --danger: #E85C5C;
+
+  
+  background-color: var(--bg-color);
+  font-family: 'Alibaba PuHuiTi', 'PingFang SC', 'Microsoft Yahei', sans-serif;
+  font-size: 28rpx;
+  color: var(--text-main);
+  box-sizing: border-box;
+}
+
+/* 使用系统字体 */
+
+page {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+button {
+  background: initial;
+}
+
+button:focus {
+  outline: 0;
+}
+
+button::after {
+  border: none;
+}

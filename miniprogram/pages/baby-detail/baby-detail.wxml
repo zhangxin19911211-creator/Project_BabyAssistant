@@ -1,0 +1,72 @@
+<!--pages/baby-detail/baby-detail.wxml-->
+<view class="container">
+  <!-- Baby Info Header -->
+  <view class="header-info">
+    <view class="avatar-container" bindtap="chooseAvatar">
+      <image class="avatar" src="{{baby.avatarUrl || '/images/avatar.png'}}" mode="aspectFill"></image>
+      <view class="avatar-edit-icon">+</view>
+    </view>
+    <view class="info">
+      <text class="name">{{baby.name}}</text>
+      <text class="age">{{baby.ageStr}}</text>
+    </view>
+  </view>
+
+  <!-- Top Navigation Tabs -->
+  <view class="nav-tabs">
+    <view class="tab {{currentTab === 'records' ? 'active' : ''}}" bindtap="switchTab" data-tab="records">记录列表</view>
+    <view class="tab {{currentTab === 'height' ? 'active' : ''}}" bindtap="switchTab" data-tab="height">身高曲线</view>
+    <view class="tab {{currentTab === 'weight' ? 'active' : ''}}" bindtap="switchTab" data-tab="weight">体重曲线</view>
+  </view>
+
+  <view class="action-bar" wx:if="{{currentTab === 'records'}}">
+    <button class="add-btn" bindtap="goToAddRecord">+ 添加记录</button>
+  </view>
+
+  <!-- Content Area -->
+  <view class="content-area">
+    <!-- Records List -->
+    <block wx:if="{{currentTab === 'records'}}">
+      <view class="empty-state" wx:if="{{records.length === 0}}">
+        <text class="empty-text">暂无成长记录</text>
+      </view>
+      
+      <view class="record-list" wx:else>
+        <view class="record-card" wx:for="{{records}}" wx:key="_id">
+          <view class="record-data">
+            <view class="data-row">
+              <text class="data-label">身高</text>
+              <text class="data-value">{{item.height}} <text class="unit">cm</text></text>
+            </view>
+            <view class="data-divider"></view>
+            <view class="data-row">
+              <text class="data-label">体重</text>
+              <text class="data-value">{{item.weight}} <text class="unit">kg</text></text>
+            </view>
+          </view>
+          
+          <view class="record-meta">
+            <text class="time">{{item.formattedDate}}</text>
+            <text class="record-age">{{item.ageStr}}</text>
+          </view>
+          
+          <view class="delete-btn" catchtap="deleteRecord" data-id="{{item._id}}">删除</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- Height Curve -->
+    <block wx:if="{{currentTab === 'height'}}">
+      <view class="chart-container">
+        <ec-canvas id="height-dom-line" canvas-id="height-line" ec="{{ ecHeight }}"></ec-canvas>
+      </view>
+    </block>
+
+    <!-- Weight Curve -->
+    <block wx:if="{{currentTab === 'weight'}}">
+      <view class="chart-container">
+        <ec-canvas id="weight-dom-line" canvas-id="weight-line" ec="{{ ecWeight }}"></ec-canvas>
+      </view>
+    </block>
+  </view>
+</view>

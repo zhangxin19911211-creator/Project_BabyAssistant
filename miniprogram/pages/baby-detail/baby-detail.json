@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "宝宝详情",
+  "navigationBarBackgroundColor": "#81C784",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "ec-canvas": "../../components/ec-canvas/ec-canvas"
+  }
+}
