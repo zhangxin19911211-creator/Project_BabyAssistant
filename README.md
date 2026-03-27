@@ -1,73 +1,143 @@
-# React + TypeScript + Vite
+# 宝宝助手 - 微信小程序
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一款专为父母设计的宝宝成长记录工具，帮助您轻松追踪宝宝的成长数据。
 
-Currently, two official plugins are available:
+## 📱 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 核心功能
+- **宝宝信息管理**：添加、查看、删除宝宝信息
+- **成长记录追踪**：记录宝宝的身高、体重等数据
+- **成长曲线分析**：通过图表直观展示宝宝的成长趋势
+- **多宝宝支持**：最多可添加4个宝宝的信息
+- **微信一键登录**：使用微信账号快速登录
+- **云端数据存储**：数据安全存储在腾讯云
 
-## React Compiler
+### 技术特点
+- **微信原生开发**：使用小程序原生框架
+- **腾讯云开发**：无需后端服务器，快速部署
+- **数据安全**：用户数据隔离，权限验证
+- **响应式设计**：适配各种手机屏幕
+- **性能优化**：代码精简，加载迅速
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ 技术栈
 
-## Expanding the ESLint configuration
+- **前端**：微信小程序原生框架 (WXML, WXSS, JavaScript)
+- **后端**：腾讯云开发 (CloudBase)
+- **数据库**：云数据库 (NoSQL)
+- **图表**：ECharts 小程序版
+- **认证**：微信登录
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 快速开始
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 环境要求
+- 微信开发者工具
+- 腾讯云开发环境
+- Node.js (用于云函数开发)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 部署步骤
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. **克隆项目**
+   ```bash
+   git clone <仓库地址>
+   cd BabyAssistant_wechat_1
+   ```
+
+2. **配置云开发环境**
+   - 在微信开发者工具中打开项目
+   - 点击「云开发」按钮，创建或选择云开发环境
+   - 复制环境ID到 `miniprogram/app.js` 中的 `globalData.env`
+
+3. **部署云函数**
+   - 在微信开发者工具中，右键点击 `cloudfunctions/login` 文件夹
+   - 选择「上传并部署」
+
+4. **创建数据库集合**
+   - 在云开发控制台中，创建以下集合：
+     - `babies`：存储宝宝信息
+     - `records`：存储成长记录
+     - `users`：存储用户信息
+
+5. **运行项目**
+   - 在微信开发者工具中点击「编译」按钮
+   - 可以在模拟器中预览，或使用真机调试
+
+## 📁 项目结构
+
+```
+BabyAssistant_wechat_1/
+├── cloudfunctions/          # 云函数
+│   └── login/               # 登录和删除宝宝的云函数
+├── miniprogram/             # 小程序前端
+│   ├── components/          # 组件
+│   │   ├── cloudTipModal/   # 云开发提示组件
+│   │   └── ec-canvas/       # ECharts图表组件
+│   ├── images/              # 图片资源
+│   ├── pages/               # 页面
+│   │   ├── index/           # 首页
+│   │   ├── baby-add/        # 添加宝宝
+│   │   ├── baby-detail/     # 宝宝详情
+│   │   └── record-add/      # 添加记录
+│   ├── utils/               # 工具函数
+│   │   ├── api.js           # API调用
+│   │   └── util.js          # 工具函数
+│   ├── app.js               # 应用入口
+│   ├── app.json             # 应用配置
+│   └── app.wxss             # 全局样式
+├── project.config.json      # 项目配置
+└── README.md                # 项目说明
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📖 使用说明
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 1. 添加宝宝
+- 进入首页，点击「添加宝宝」按钮
+- 填写宝宝姓名、性别、出生日期等信息
+- 可以选择上传宝宝头像
+- 点击「完成」按钮保存
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 2. 记录成长数据
+- 在宝宝详情页，点击「添加记录」按钮
+- 填写测量日期、身高、体重等数据
+- 点击「保存记录」按钮
+
+### 3. 查看成长曲线
+- 在宝宝详情页，查看身高和体重的成长曲线
+- 可以缩放查看不同时期的成长趋势
+- 标准曲线和宝宝数据对比展示
+
+### 4. 管理宝宝信息
+- 在首页左滑宝宝卡片，可以删除宝宝
+- 点击宝宝卡片进入详情页
+
+## 🔒 数据安全
+
+- **用户隔离**：每个用户只能查看和管理自己的宝宝信息
+- **权限验证**：所有数据操作都经过权限验证
+- **事务保护**：删除操作使用事务确保数据一致性
+- **登录安全**：使用微信官方登录机制
+
+## 📝 版本更新
+
+### v1.0.0
+- 基础功能实现
+- 宝宝信息管理
+- 成长记录追踪
+- 成长曲线展示
+- 微信登录集成
+- 云存储部署
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request 来帮助改进这个项目！
+
+## 📄 许可证
+
+MIT License
+
+## 📞 联系我们
+
+如有问题或建议，欢迎联系开发者。
+
+---
+
+**让我们一起记录宝宝的每一步成长！** 👶✨
