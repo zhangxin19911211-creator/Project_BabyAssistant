@@ -110,6 +110,42 @@ const getBabyById = async (id) => {
   }
 }
 
+// 根据ID获取记录信息
+const getRecordById = async (id) => {
+  try {
+    // 获取当前用户信息
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      try {
+        // 等待登录完成
+        user = await waitForLogin()
+      } catch (loginError) {
+        console.error('登录失败', loginError)
+        return null
+      }
+    }
+    
+    // 使用云函数获取记录信息，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getRecordById',
+        recordId: id
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.record
+    } else {
+      console.error('获取记录信息失败', result.result?.error)
+      return null
+    }
+  } catch (error) {
+    console.error('获取记录信息失败', error)
+    return null
+  }
+}
+
 // 添加宝宝
 const addBaby = async (babyInfo) => {
   try {
@@ -267,7 +303,7 @@ const addRecord = async (recordInfo, isBirth = false) => {
       throw new Error('宝宝不存在')
     }
     
-    // 检查用户权限（照看者和监护人可以添加记录）
+    // 检查用户权限（二级助教和一级助教可以添加记录）
     const families = await getFamilies()
     const family = families.find(f => f._id === baby.familyId)
     if (!family) {
@@ -276,7 +312,7 @@ const addRecord = async (recordInfo, isBirth = false) => {
     
     const currentMember = family.members.find(m => m.openid === user.openid)
     if (!currentMember || currentMember.permission === 'viewer') {
-      throw new Error('只有照看者和监护人才可以添加记录')
+      throw new Error('只有二级助教和一级助教才可以添加记录')
     }
     
     let ageInMonths = 0
@@ -311,33 +347,20 @@ const deleteRecord = async (id) => {
       user = await waitForLogin()
     }
     
-    // 获取记录信息
-    const recordResult = await db.collection('records').doc(id).get()
-    const record = recordResult.data
+    // 使用云函数删除记录（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'deleteRecord',
+        recordId: id
+      }
+    })
     
-    if (!record) {
-      throw new Error('记录不存在')
+    if (result.result && result.result.success) {
+      return result.result
+    } else {
+      throw new Error(result.result?.error || '删除记录失败')
     }
-    
-    // 获取宝宝信息
-    const baby = await getBabyById(record.babyId)
-    if (!baby) {
-      throw new Error('宝宝不存在')
-    }
-    
-    // 检查用户权限（监护人可以删除记录）
-    const families = await getFamilies()
-    const family = families.find(f => f._id === baby.familyId)
-    if (!family) {
-      throw new Error('无权限删除此记录')
-    }
-    
-    const currentMember = family.members.find(m => m.openid === user.openid)
-    if (!currentMember || currentMember.permission !== 'guardian') {
-      throw new Error('只有监护人才可以删除记录')
-    }
-    
-    await db.collection('records').doc(id).remove()
   } catch (error) {
     console.error('删除记录失败', error)
     throw error
@@ -825,6 +848,7 @@ const checkPermission = async (babyId, requiredPermission) => {
 module.exports = {
   getBabies,
   getBabyById,
+  getRecordById,
   addBaby,
   deleteBaby,
   updateBabyAvatar,

@@ -66,7 +66,7 @@ Page({
       const hasPermission = await api.checkPermission(null, 'guardian')
       if (!hasPermission) {
         wx.showToast({
-          title: '只有监护人才可以添加宝宝',
+          title: '只有一级助教才可以添加宝宝',
           icon: 'none'
         })
         return
@@ -104,7 +104,7 @@ Page({
       const hasPermission = await api.checkPermission(id, 'guardian')
       if (!hasPermission) {
         wx.showToast({
-          title: '只有监护人才可以删除宝宝',
+          title: '只有一级助教才可以删除宝宝',
           icon: 'none'
         })
         return

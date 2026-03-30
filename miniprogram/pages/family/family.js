@@ -12,6 +12,7 @@ Page({
     showCreateModal: false,
     showEditNameModal: false,
     showEditNicknameModal: false,
+    showFeedbackModal: false,
     familyName: '',
     inviteCode: '',
     currentInviteCode: '',
@@ -20,7 +21,9 @@ Page({
     editFamilyId: null,
     editFamilyName: '',
     editNickname: '',
-    editNicknameMember: null
+    editNicknameMember: null,
+    feedbackContent: '',
+    feedbackImages: []
   },
 
   onShow() {
@@ -30,11 +33,40 @@ Page({
   async loadFamilyInfo() {
     try {
       const families = await api.getFamilies()
-      const currentUser = getApp().globalData.userInfo
+      let currentUser = getApp().globalData.userInfo
+
+      // 构建用户在各家庭中的身份列表
+      const userFamilyRoles = []
+      if (families.length > 0) {
+        const firstFamily = families[0]
+        const userInFamily = firstFamily.members.find(member => member.openid === currentUser.openid)
+        if (userInFamily) {
+          currentUser = {
+            ...currentUser,
+            permission: userInFamily.permission
+          }
+        }
+
+        // 遍历所有家庭，获取用户在各家庭中的身份
+        families.forEach(family => {
+          const member = family.members.find(m => m.openid === currentUser.openid)
+          if (member) {
+            const permissionText = member.permission === 'guardian' ? '一级助教' : 
+                                  member.permission === 'caretaker' ? '二级助教' : '围观吃瓜'
+            userFamilyRoles.push({
+              familyId: family._id,
+              familyName: family.name,
+              permission: member.permission,
+              permissionText: permissionText
+            })
+          }
+        })
+      }
 
       this.setData({
         families,
-        currentUser
+        currentUser,
+        userFamilyRoles
       })
     } catch (error) {
       console.error('加载家庭信息失败', error)
@@ -256,6 +288,73 @@ Page({
     // 什么都不做
   },
 
+  // 点击header头像
+  onHeaderAvatarTap() {
+    const currentUser = this.data.currentUser
+    
+    // 选择图片上传
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath
+
+        wx.showLoading({ title: '上传中...' })
+
+        try {
+          // 上传图片到云存储
+          const cloudPath = 'avatars/' + Date.now() + '.jpg'
+          const uploadResult = await wx.cloud.uploadFile({
+            cloudPath: cloudPath,
+            filePath: tempFilePath
+          })
+
+          const fileID = uploadResult.fileID
+
+          // 遍历所有家庭并更新头像
+          const families = this.data.families
+          for (const family of families) {
+            await api.updateMemberInfo(family._id, null, fileID)
+          }
+
+          // 更新全局用户信息
+          getApp().globalData.userInfo.avatarUrl = fileID
+
+          wx.hideLoading()
+          wx.showToast({
+            title: '头像更新成功',
+            icon: 'success'
+          })
+
+          this.loadFamilyInfo()
+        } catch (error) {
+          wx.hideLoading()
+          console.error('上传头像失败', error)
+          wx.showToast({
+            title: '上传头像失败',
+            icon: 'none'
+          })
+        }
+      },
+      fail: (error) => {
+        console.error('选择图片失败', error)
+      }
+    })
+  },
+
+  // 点击header用户名
+  onHeaderNameTap() {
+    const currentUser = this.data.currentUser
+    
+    this.setData({
+      showEditNicknameModal: true,
+      editNicknameMember: currentUser,
+      editNickname: currentUser.nickName,
+      selectedFamily: this.data.families[0]?._id
+    })
+  },
+
   // 点击成员头像
   onMemberAvatarTap(e) {
     const member = e.currentTarget.dataset.member
@@ -374,7 +473,14 @@ Page({
     }
 
     try {
-      await api.updateMemberInfo(selectedFamily, editNickname.trim(), null)
+      // 遍历所有家庭并更新用户名
+      const families = this.data.families
+      for (const family of families) {
+        await api.updateMemberInfo(family._id, editNickname.trim(), null)
+      }
+
+      // 更新全局用户信息
+      getApp().globalData.userInfo.nickName = editNickname.trim()
 
       wx.showToast({
         title: '用户名修改成功',
@@ -502,6 +608,137 @@ Page({
       console.error('加入家庭失败', error)
       wx.showToast({
         title: error.message || '加入失败，请重试',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 打开反馈弹窗
+  openFeedbackModal() {
+    this.setData({
+      showFeedbackModal: true,
+      feedbackContent: '',
+      feedbackImages: []
+    })
+  },
+
+  // 关闭反馈弹窗
+  closeFeedbackModal() {
+    this.setData({
+      showFeedbackModal: false,
+      feedbackContent: '',
+      feedbackImages: []
+    })
+  },
+
+  // 处理反馈内容输入
+  onFeedbackContentInput(e) {
+    this.setData({
+      feedbackContent: e.detail.value
+    })
+  },
+
+  // 选择反馈图片
+  chooseFeedbackImage() {
+    const { feedbackImages } = this.data
+    
+    if (feedbackImages.length >= 3) {
+      return wx.showToast({ title: '最多上传3张图片', icon: 'none' })
+    }
+
+    wx.chooseMedia({
+      count: 3 - feedbackImages.length,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const newImages = res.tempFiles.map(file => file.tempFilePath)
+        this.setData({
+          feedbackImages: [...feedbackImages, ...newImages]
+        })
+      },
+      fail: (error) => {
+        console.error('选择图片失败', error)
+      }
+    })
+  },
+
+  // 删除反馈图片
+  deleteFeedbackImage(e) {
+    const index = e.currentTarget.dataset.index
+    const { feedbackImages } = this.data
+    
+    feedbackImages.splice(index, 1)
+    this.setData({
+      feedbackImages
+    })
+  },
+
+  // 提交反馈
+  async submitFeedback() {
+    const { feedbackContent, feedbackImages } = this.data
+    
+    if (!feedbackContent.trim()) {
+      return wx.showToast({ title: '请输入反馈内容', icon: 'none' })
+    }
+
+    wx.showLoading({ title: '提交中...' })
+
+    try {
+      // 上传图片到云存储
+      const uploadedImages = []
+      for (const image of feedbackImages) {
+        const cloudPath = 'feedback/' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.jpg'
+        const uploadResult = await wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: image
+        })
+        uploadedImages.push(uploadResult.fileID)
+      }
+
+      // 构造反馈数据
+      const feedbackData = {
+        content: feedbackContent.trim(),
+        images: uploadedImages,
+        openid: getApp().globalData.userInfo.openid,
+        createTime: new Date()
+      }
+
+      // 保存到数据库
+      const db = wx.cloud.database()
+      const result = await db.collection('feedback').add({
+        data: feedbackData
+      })
+
+      // 调用云函数发送邮件
+      try {
+        await wx.cloud.callFunction({
+          name: 'sendFeedbackEmail',
+          data: {
+            data: {
+              ...feedbackData,
+              _id: result._id
+            }
+          }
+        })
+        console.log('邮件发送请求已提交')
+      } catch (emailError) {
+        console.error('发送邮件失败', emailError)
+        // 邮件发送失败不影响反馈提交
+      }
+
+      wx.hideLoading()
+      wx.showToast({
+        title: '反馈提交成功',
+        icon: 'success',
+        success: () => {
+          this.closeFeedbackModal()
+        }
+      })
+    } catch (error) {
+      wx.hideLoading()
+      console.error('提交反馈失败', error)
+      wx.showToast({
+        title: '提交失败，请重试',
         icon: 'none'
       })
     }

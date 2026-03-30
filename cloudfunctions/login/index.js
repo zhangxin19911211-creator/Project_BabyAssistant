@@ -147,10 +147,10 @@ exports.main = async (event, context) => {
         throw new Error('家庭不存在')
       }
       
-      // 验证当前用户是否为监护人
+      // 验证当前用户是否为一级助教
       const currentMember = family.members.find(member => member.openid === openid)
       if (!currentMember || currentMember.permission !== 'guardian') {
-        throw new Error('只有监护人才可以修改家庭名称')
+        throw new Error('只有一级助教才可以修改家庭名称')
       }
       
       // 更新家庭名称
@@ -175,10 +175,10 @@ exports.main = async (event, context) => {
         throw new Error('家庭不存在')
       }
       
-      // 验证当前用户是否为监护人
+      // 验证当前用户是否为一级助教
       const currentMember = family.members.find(member => member.openid === openid)
       if (!currentMember || currentMember.permission !== 'guardian') {
-        throw new Error('只有监护人才可以修改权限')
+        throw new Error('只有一级助教才可以修改权限')
       }
       
       // 找到要更新的成员（使用openid查找）
@@ -216,10 +216,10 @@ exports.main = async (event, context) => {
         throw new Error('家庭不存在')
       }
       
-      // 验证当前用户是否为监护人
+      // 验证当前用户是否为一级助教
       const currentMember = family.members.find(member => member.openid === openid)
       if (!currentMember || currentMember.permission !== 'guardian') {
-        throw new Error('只有监护人才可以移除成员')
+        throw new Error('只有一级助教才可以移除成员')
       }
       
       // 找到要移除的成员（使用openid查找）
@@ -469,10 +469,10 @@ exports.main = async (event, context) => {
           throw new Error('宝宝不存在')
         }
         
-        // 验证用户是否有权限删除此宝宝（用户必须是宝宝所属家庭的监护人）
+        // 验证用户是否有权限删除此宝宝（用户必须是宝宝所属家庭的一级助教）
         const family = await transaction.collection('families').doc(baby.data.familyId).get()
         if (!family.data || !family.data.members.some(member => member.openid === wxContext.OPENID && member.permission === 'guardian')) {
-          throw new Error('只有监护人才可以删除宝宝')
+          throw new Error('只有一级助教才可以删除宝宝')
         }
         
         // 删除宝宝信息
@@ -487,6 +487,50 @@ exports.main = async (event, context) => {
       })
       
       return result
+    }
+    
+    // 处理删除记录的操作
+    if (action === 'deleteRecord' && event.recordId) {
+      const openid = wxContext.OPENID
+      const recordId = event.recordId
+      
+      // 查询记录信息
+      const recordResult = await db.collection('records').doc(recordId).get()
+      const record = recordResult.data
+      
+      if (!record) {
+        throw new Error('记录不存在')
+      }
+      
+      // 查询宝宝信息
+      const babyResult = await db.collection('babies').doc(record.babyId).get()
+      const baby = babyResult.data
+      
+      if (!baby) {
+        throw new Error('宝宝不存在')
+      }
+      
+      // 查询家庭信息
+      const familyResult = await db.collection('families').doc(baby.familyId).get()
+      const family = familyResult.data
+      
+      if (!family) {
+        throw new Error('家庭不存在')
+      }
+      
+      // 检查用户权限
+      const currentMember = family.members.find(member => member.openid === openid)
+      if (!currentMember) {
+        throw new Error('无权限删除此记录')
+      }
+      
+      // 一级助教可以删除任何记录，二级助教只能删除自己录入的记录
+      if (currentMember.permission === 'guardian' || (currentMember.permission === 'caretaker' && record.openid === openid)) {
+        await db.collection('records').doc(recordId).remove()
+        return { success: true }
+      } else {
+        throw new Error('无权限删除此记录')
+      }
     }
     
     // 处理获取宝宝信息的操作
@@ -540,6 +584,37 @@ exports.main = async (event, context) => {
       return { success: true, records: recordsResult.data || [] }
     }
     
+    // 处理获取单个记录的操作
+    if (action === 'getRecordById' && event.recordId) {
+      const openid = wxContext.OPENID
+      const recordId = event.recordId
+      
+      // 查询记录信息
+      const recordResult = await db.collection('records').doc(recordId).get()
+      const record = recordResult.data
+      
+      if (!record) {
+        throw new Error('记录不存在')
+      }
+      
+      // 验证用户是否有权限查看此记录（用户必须是宝宝所属家庭的成员）
+      const babyResult = await db.collection('babies').doc(record.babyId).get()
+      const baby = babyResult.data
+      
+      if (!baby) {
+        throw new Error('宝宝不存在')
+      }
+      
+      const familyResult = await db.collection('families').doc(baby.familyId).get()
+      const family = familyResult.data
+      
+      if (!family || !family.members.some(member => member.openid === openid)) {
+        throw new Error('无权限查看此记录')
+      }
+      
+      return { success: true, record: record }
+    }
+    
     // 处理获取单个家庭信息的操作
     if (action === 'getFamilyById' && familyId) {
       const openid = wxContext.OPENID
@@ -572,10 +647,10 @@ exports.main = async (event, context) => {
         throw new Error('家庭不存在')
       }
       
-      // 验证当前用户是否为监护人或照看者
+      // 验证当前用户是否为一级助教或二级助教
       const currentMember = family.members.find(member => member.openid === openid)
       if (!currentMember || (currentMember.permission !== 'guardian' && currentMember.permission !== 'caretaker')) {
-        throw new Error('只有监护人和照看者可以邀请成员')
+        throw new Error('只有一级助教和二级助教可以邀请成员')
       }
       
       // 生成邀请码
@@ -617,12 +692,12 @@ exports.main = async (event, context) => {
         throw new Error('宝宝不存在')
       }
       
-      // 验证用户是否有权限修改（用户必须是宝宝所属家庭的监护人）
+      // 验证用户是否有权限修改（用户必须是宝宝所属家庭的一级助教）
       const familyResult = await db.collection('families').doc(baby.familyId).get()
       const family = familyResult.data
       
       if (!family || !family.members.some(member => member.openid === openid && member.permission === 'guardian')) {
-        throw new Error('只有监护人才可以修改宝宝姓名')
+        throw new Error('只有一级助教才可以修改宝宝姓名')
       }
       
       // 更新宝宝姓名

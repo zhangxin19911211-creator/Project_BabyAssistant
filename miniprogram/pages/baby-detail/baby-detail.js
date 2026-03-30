@@ -478,7 +478,7 @@ Page({
       const hasPermission = await api.checkPermission(this.data.babyId, 'guardian')
       if (!hasPermission) {
         wx.showToast({
-          title: '只有监护人才可以修改宝宝姓名',
+          title: '只有一级助教才可以修改宝宝姓名',
           icon: 'none'
         })
         return
@@ -540,7 +540,7 @@ Page({
       const hasPermission = await api.checkPermission(this.data.babyId, 'guardian')
       if (!hasPermission) {
         wx.showToast({
-          title: '只有监护人才可以更新头像',
+          title: '只有一级助教才可以更新头像',
           icon: 'none'
         })
         return
@@ -594,7 +594,7 @@ Page({
       const hasPermission = await api.checkPermission(this.data.babyId, 'caretaker')
       if (!hasPermission) {
         wx.showToast({
-          title: '只有监护人和照看者可以添加记录',
+          title: '只有一级助教和二级助教可以添加记录',
           icon: 'none'
         })
         return
@@ -614,35 +614,44 @@ Page({
   async deleteRecord(e) {
     const id = e.currentTarget.dataset.id
     try {
-      const hasPermission = await api.checkPermission(this.data.babyId, 'guardian')
-      if (!hasPermission) {
-        wx.showToast({
-          title: '只有监护人才可以删除记录',
-          icon: 'none'
-        })
+      // 首先检查是否是一级助教
+      const isGuardian = await api.checkPermission(this.data.babyId, 'guardian')
+      if (isGuardian) {
+        // 一级助教可以删除任何记录
+        this.confirmDeleteRecord(id)
         return
       }
-      wx.showModal({
-        title: '确认删除',
-        content: '删除后记录不可恢复',
-        success: async (res) => {
-          if (res.confirm) {
-            try {
-              await api.deleteRecord(id)
-              await this.loadData()
-              wx.showToast({
-                title: '删除成功',
-                icon: 'success'
-              })
-            } catch (error) {
-              console.error('删除记录失败', error)
-              wx.showToast({
-                title: '删除失败，请重试',
-                icon: 'none'
-              })
-            }
+      
+      // 检查是否是二级助教
+      const isCaretaker = await api.checkPermission(this.data.babyId, 'caretaker')
+      if (isCaretaker) {
+        // 二级助教只能删除自己录入的记录
+        try {
+          // 获取记录信息
+          const record = await api.getRecordById(id)
+          if (record && record.openid === getApp().globalData.userInfo.openid) {
+            // 是自己录入的记录，可以删除
+            this.confirmDeleteRecord(id)
+          } else {
+            wx.showToast({
+              title: '只能删除自己录入的记录',
+              icon: 'none'
+            })
           }
+        } catch (recordError) {
+          console.error('获取记录信息失败', recordError)
+          wx.showToast({
+            title: '获取记录信息失败',
+            icon: 'none'
+          })
         }
+        return
+      }
+      
+      // 既不是监护人也不是照看者，没有删除权限
+      wx.showToast({
+        title: '没有删除权限',
+        icon: 'none'
       })
     } catch (error) {
       console.error('检查权限失败', error)
@@ -651,5 +660,31 @@ Page({
         icon: 'none'
       })
     }
+  },
+
+  // 确认删除记录
+  async confirmDeleteRecord(id) {
+    wx.showModal({
+      title: '确认删除',
+      content: '删除后记录不可恢复',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            await api.deleteRecord(id)
+            await this.loadData()
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success'
+            })
+          } catch (error) {
+            console.error('删除记录失败', error)
+            wx.showToast({
+              title: '删除失败，请重试',
+              icon: 'none'
+            })
+          }
+        }
+      }
+    })
   }
 })

@@ -1,6 +1,23 @@
 <view class="container">
   <!-- 页面头部 -->
   <view class="header">
+    <view class="header-decoration"></view>
+    <view class="user-info-row">
+      <view class="user-avatar-large" catchtap="onHeaderAvatarTap">
+        <image class="avatar-large" src="{{currentUser.avatarUrl || '../../images/avatar.png'}}" mode="aspectFill"></image>
+      </view>
+      <view class="user-name-wrap" catchtap="onHeaderNameTap">
+        <text class="user-name-large">{{currentUser.nickName || '用户'}}</text>
+      </view>
+    </view>
+    <view class="user-roles-row">
+      <view class="user-roles-list">
+        <view wx:for="{{userFamilyRoles}}" wx:key="familyId" class="user-role-item {{item.permission}}">
+          <text class="role-family-name">{{item.familyName}}</text>
+          <text class="role-permission">{{item.permissionText}}</text>
+        </view>
+      </view>
+    </view>
     <view class="header-actions">
       <button class="action-btn-small join-btn" bindtap="openJoinModal">
         <text class="btn-text">加入家庭</text>
@@ -45,15 +62,15 @@
         
         <view class="members-list">
           <view class="member-card" wx:for="{{item.members}}" wx:key="openid" wx:for-item="member">
-            <view class="member-avatar" catchtap="onMemberAvatarTap" data-member="{{member}}" data-family-id="{{item._id}}">
+            <view class="member-avatar">
               <image class="avatar" src="{{member.avatarUrl || '../../images/avatar.png'}}" mode="aspectFill"></image>
               <text wx:if="{{member.openid === item.creatorOpenid}}" class="creator-badge">创建者</text>
             </view>
-            <view class="member-info" catchtap="onMemberNameTap" data-member="{{member}}" data-family-id="{{item._id}}">
+            <view class="member-info">
               <view class="member-name-container">
                 <text class="member-name">{{member.nickName.length > 6 ? member.nickName.substring(0, 6) + '...' : member.nickName}}</text>
               </view>
-              <text class="member-role {{member.permission}}">{{member.permission === 'guardian' ? '监护人' : member.permission === 'caretaker' ? '照看者' : '围观者'}}</text>
+              <text class="member-role {{member.permission}}">{{member.permission === 'guardian' ? '一级助教' : member.permission === 'caretaker' ? '二级助教' : '围观吃瓜'}}</text>
             </view>
             <view class="member-actions">
               <button wx:if="{{currentUser.openid === item.creatorOpenid && member.openid !== item.creatorOpenid}}" class="action-btn edit-btn" bindtap="openPermissionModal" data-member="{{member}}" data-family-id="{{item._id}}">权限调整</button>
@@ -70,15 +87,15 @@
     <text class="section-title">权限说明</text>
     <view class="permission-card">
       <view class="permission-item">
-        <text class="permission-name guardian">监护人</text>
+        <text class="permission-name guardian">一级助教</text>
         <text class="permission-desc">最高权限，可以新增和删除宝宝，可以新增和删除身高体重等数据，可以移除家庭成员，可以修改家庭成员权限</text>
       </view>
       <view class="permission-item">
-        <text class="permission-name caretaker">照看者</text>
+        <text class="permission-name caretaker">二级助教</text>
         <text class="permission-desc">无法新增和删除宝宝，仅可以新增宝宝身高体重数据</text>
       </view>
       <view class="permission-item">
-        <text class="permission-name viewer">围观者</text>
+        <text class="permission-name viewer">围观吃瓜</text>
         <text class="permission-desc">只能查看宝宝数据</text>
       </view>
     </view>
@@ -94,19 +111,19 @@
       <view class="invite-options">
         <button class="invite-option-card guardian-card" bindtap="inviteMember" data-member-type="guardian">
           <view class="card-content">
-            <text class="role-title">监护人</text>
+            <text class="role-title">一级助教</text>
             <text class="role-desc">最高权限，可管理宝宝和成员</text>
           </view>
         </button>
         <button class="invite-option-card caretaker-card" bindtap="inviteMember" data-member-type="caretaker">
           <view class="card-content">
-            <text class="role-title">照看者</text>
+            <text class="role-title">二级助教</text>
             <text class="role-desc">可添加宝宝成长记录</text>
           </view>
         </button>
         <button class="invite-option-card viewer-card" bindtap="inviteMember" data-member-type="viewer">
           <view class="card-content">
-            <text class="role-title">围观者</text>
+            <text class="role-title">围观吃瓜</text>
             <text class="role-desc">仅可查看宝宝成长数据</text>
           </view>
         </button>
@@ -140,9 +157,9 @@
     <view class="modal-content" catchtap="noop">
       <text class="modal-title">修改权限</text>
       <view class="permission-options">
-        <button class="permission-option-btn guardian-btn" bindtap="updatePermission" data-permission="guardian">监护人</button>
-        <button class="permission-option-btn caretaker-btn" bindtap="updatePermission" data-permission="caretaker">照看者</button>
-        <button class="permission-option-btn viewer-btn" bindtap="updatePermission" data-permission="viewer">围观者</button>
+        <button class="permission-option-btn guardian-btn" bindtap="updatePermission" data-permission="guardian">一级助教</button>
+        <button class="permission-option-btn caretaker-btn" bindtap="updatePermission" data-permission="caretaker">二级助教</button>
+        <button class="permission-option-btn viewer-btn" bindtap="updatePermission" data-permission="viewer">围观吃瓜</button>
       </view>
       <button class="cancel-btn" bindtap="closePermissionModal">取消</button>
     </view>
@@ -240,6 +257,53 @@
             <text class="btn-text">保存</text>
           </button>
           <button class="cancel-btn" bindtap="closeEditNicknameModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 反馈按钮 -->
+  <view class="feedback-section">
+    <button class="feedback-btn" bindtap="openFeedbackModal">
+      <text class="btn-text">反馈问题</text>
+    </button>
+  </view>
+
+  <!-- 反馈弹窗 -->
+  <view wx:if="{{showFeedbackModal}}" class="modal-overlay" bindtap="closeFeedbackModal">
+    <view class="modal-content feedback-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">反馈问题</text>
+        <text class="modal-subtitle">请描述您遇到的问题或优化意见</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">反馈内容</text>
+          <textarea class="feedback-textarea" placeholder="请详细描述您的问题或建议..." value="{{feedbackContent}}" bindinput="onFeedbackContentInput" maxlength="500" />
+          <text class="input-hint">{{feedbackContent.length}}/500</text>
+        </view>
+        <view class="input-container">
+          <text class="input-label">添加图片（可选）</text>
+          <view class="image-upload-container">
+            <view class="uploaded-images">
+              <view wx:for="{{feedbackImages}}" wx:key="index" class="uploaded-image-item">
+                <image src="{{item}}" mode="aspectFill" class="uploaded-image"></image>
+                <view class="delete-image-btn" bindtap="deleteFeedbackImage" data-index="{{index}}">×</view>
+              </view>
+              <view wx:if="{{feedbackImages.length < 3}}" class="add-image-btn" bindtap="chooseFeedbackImage">
+                <text>+</text>
+              </view>
+            </view>
+            <text class="input-hint">最多上传3张图片</text>
+          </view>
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitFeedback">
+            <text class="btn-text">提交反馈</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeFeedbackModal">
             <text class="btn-text">取消</text>
           </button>
         </view>

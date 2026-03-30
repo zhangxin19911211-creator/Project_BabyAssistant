@@ -72,7 +72,7 @@ Page({
     try {
       const hasPermission = await api.checkPermission(this.data.babyId, 'caretaker')
       if (!hasPermission) {
-        return wx.showToast({ title: '只有监护人和照看者可以添加记录', icon: 'none' })
+        return wx.showToast({ title: '只有一级助教和二级助教可以添加记录', icon: 'none' })
       }
       
       const { height, weight, recordDate } = this.data.formData
