@@ -1,3 +1,61 @@
 {
-  "treeData": []
+  "name": "baby-assistant-auto-test",
+  "version": "2.0.0",
+  "description": "宝宝助手小程序自动化测试脚本",
+  "author": "Your Name",
+  "scripts": {
+    "test:all": "node auto-test.js",
+    "test:api": "node auto-test.js --test=api",
+    "test:baby": "node auto-test.js --test=baby",
+    "test:record": "node auto-test.js --test=record",
+    "test:performance": "node auto-test.js --test=performance"
+  },
+  "config": {
+    "timeout": 10000,
+    "enableCache": true,
+    "verbose": true
+  },
+  "testCases": [
+    {
+      "name": "API 基础功能测试",
+      "description": "测试获取家庭列表、宝宝列表、缓存机制等基础 API 功能",
+      "expected": "所有 API 调用成功，缓存命中率 > 80%"
+    },
+    {
+      "name": "宝宝管理功能测试",
+      "description": "测试宝宝数据添加、年龄计算、数据验证等功能",
+      "expected": "数据结构正确，年龄计算准确"
+    },
+    {
+      "name": "成长记录功能测试",
+      "description": "测试成长记录的查询、统计、最新记录获取等功能",
+      "expected": "记录查询成功，数据统计准确"
+    },
+    {
+      "name": "数据库索引性能测试",
+      "description": "测试数据库索引的查询性能，验证索引是否生效",
+      "expected": "所有查询 < 200ms，索引使用正常"
+    },
+    {
+      "name": "并行请求优化测试",
+      "description": "测试并行请求 vs 串行请求的性能对比",
+      "expected": "并行请求比串行快 30% 以上"
+    },
+    {
+      "name": "防抖节流功能测试",
+      "description": "测试防抖和节流工具函数的正确性",
+      "expected": "防抖只执行 1 次，节流限制执行频率"
+    },
+    {
+      "name": "综合性能评分",
+      "description": "对小程序整体性能进行综合评分",
+      "expected": "综合评分 >= 80 分"
+    }
+  ],
+  "notes": [
+    "在微信开发者工具控制台中运行此脚本",
+    "确保已登录云开发环境",
+    "测试数据不会影响生产数据（使用测试数据）",
+    "首次运行会清除缓存以测试冷启动性能"
+  ]
 }
