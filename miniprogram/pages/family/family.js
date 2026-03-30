@@ -47,7 +47,7 @@ Page({
           }
         }
 
-        // 遍历所有家庭，获取用户在各家庭中的身份
+        // 遍历所有家庭，获取用户在各家庭中的身份，并为每个家庭添加当前用户的权限
         families.forEach(family => {
           const member = family.members.find(m => m.openid === currentUser.openid)
           if (member) {
@@ -59,6 +59,8 @@ Page({
               permission: member.permission,
               permissionText: permissionText
             })
+            // 为家庭对象添加当前用户的权限
+            family.currentUserPermission = member.permission
           }
         })
       }
@@ -102,6 +104,10 @@ Page({
     
     if (!familyName.trim()) {
       return wx.showToast({ title: '请输入家庭名称', icon: 'none' })
+    }
+    
+    if (familyName.trim().length > 7) {
+      return wx.showToast({ title: '家庭名称最多7个字符', icon: 'none' })
     }
     
     try {
@@ -196,6 +202,10 @@ Page({
     
     if (!editFamilyName.trim()) {
       return wx.showToast({ title: '请输入家庭名称', icon: 'none' })
+    }
+    
+    if (editFamilyName.trim().length > 7) {
+      return wx.showToast({ title: '家庭名称最多7个字符', icon: 'none' })
     }
     
     try {

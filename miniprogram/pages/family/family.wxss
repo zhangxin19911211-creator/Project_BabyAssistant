@@ -1,44 +1,5 @@
 /* 温暖活力的婴儿主题配色 */
 page {
-  --baby-primary: #66C9A8;
-  --baby-primary-light: #E0F5EF;
-  --baby-primary-dark: #4DB896;
-  --baby-coral: #FFA69E;
-  --baby-coral-light: #FFE8E6;
-  --baby-yellow: #FFD166;
-  --baby-yellow-light: #FFF8E1;
-  --baby-blue: #64B5F6;
-  --baby-blue-light: #E3F2FD;
-  --baby-bg: #FDF5F0;
-  --baby-card: #FFFFFF;
-  --baby-text: #2D2D2D;
-  --baby-text-secondary: #5B6270;
-  --baby-text-light: #8C939F;
-  --baby-success: #5BCB67;
-  --baby-warning: #FFC107;
-  --baby-danger: #FF7B84;
-  --baby-shadow: rgba(102, 209, 185, 0.2);
-  
-  /* Call Me By Your Name 配色方案 */
-  --cmbyn-color-1: #87CEEB;
-  --cmbyn-color-2: #4682B4;
-  --cmbyn-color-3: #FFDAB9;
-  --cmbyn-color-4: #FFA07A;
-  --cmbyn-color-5: #2E8B57;
-  
-  /* 家庭配色方案 */
-  --family-color-0-primary: var(--cmbyn-color-1);
-  --family-color-0-light: rgba(135, 206, 235, 0.1);
-  --family-color-0-dark: var(--cmbyn-color-2);
-  
-  --family-color-1-primary: var(--cmbyn-color-3);
-  --family-color-1-light: rgba(255, 218, 185, 0.1);
-  --family-color-1-dark: var(--cmbyn-color-4);
-  
-  --family-color-2-primary: var(--cmbyn-color-5);
-  --family-color-2-light: rgba(46, 139, 87, 0.1);
-  --family-color-2-dark: #228B22;
-  
   /* 角色配色 */
   --guardian-color: #C62828;
   --guardian-bg: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
@@ -920,14 +881,14 @@ page {
 }
 
 .modal-content {
-  background: linear-gradient(145deg, #FFFFFF 0%, #FAFAFA 100%);
+  background: linear-gradient(135deg, var(--baby-card) 0%, var(--baby-primary-light) 100%);
   border-radius: 32rpx;
   padding: 40rpx;
   width: 85%;
   max-width: 500rpx;
-  box-shadow: 0 24rpx 64rpx rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24rpx 64rpx var(--baby-shadow);
   animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 3rpx solid rgba(255, 255, 255, 0.8);
+  border: 3rpx solid rgba(127, 209, 185, 0.3);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -942,7 +903,7 @@ page {
   left: 0;
   right: 0;
   height: 6rpx;
-  background: linear-gradient(90deg, #8BC34A, #87CEEB, #FFB6C1, #FF8C00, #F0E68C);
+  background: linear-gradient(90deg, var(--cmbyn-color-1), var(--cmbyn-color-4), var(--cat-color-2), var(--cat-color-3), var(--cat-color-5));
 }
 
 @keyframes modalFadeIn {
@@ -959,10 +920,10 @@ page {
 .modal-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #212121;
+  color: var(--baby-text);
   text-align: center;
   padding-bottom: 16rpx;
-  border-bottom: 2rpx solid #F0F0F0;
+  border-bottom: 2rpx solid var(--baby-primary-light);
   letter-spacing: 2rpx;
   margin: 0;
 }
@@ -1425,51 +1386,198 @@ page {
   font-weight: 600;
 }
 
-/* 反馈弹窗 */
+/* ========== 反馈弹窗优化样式 ========== */
+
+/* 弹窗容器 */
 .feedback-modal {
-  width: 85%;
-  max-height: 80vh;
+  width: 88%;
+  max-width: 620rpx;
+  max-height: 85vh;
   overflow-y: auto;
+  padding: 48rpx 40rpx 40rpx;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FEFEFE 100%);
+  border-radius: 36rpx;
+  box-shadow:
+    0 32rpx 80rpx rgba(0, 0, 0, 0.25),
+    0 12rpx 32rpx rgba(0, 0, 0, 0.15),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+  animation: feedbackModalIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes feedbackModalIn {
+  0% {
+    opacity: 0;
+    transform: translateY(60rpx) scale(0.92);
+  }
+  70% {
+    transform: translateY(-8rpx) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 头部区域 */
+.feedback-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40rpx;
+  padding-bottom: 32rpx;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.04);
+}
+
+.feedback-icon-wrapper {
+  width: 96rpx;
+  height: 96rpx;
+  background: linear-gradient(135deg, var(--baby-primary-light) 0%, #E8F5E9 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  box-shadow:
+    0 8rpx 24rpx rgba(102, 201, 168, 0.25),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.8);
+}
+
+.feedback-icon {
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+.feedback-modal-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--baby-text);
+  margin-bottom: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+.feedback-modal-subtitle {
+  font-size: 26rpx;
+  color: var(--baby-text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 90%;
+}
+
+/* 表单区域 */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+/* 输入组 */
+.feedback-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.feedback-input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feedback-input-label {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--baby-text);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.feedback-input-label::before {
+  content: '';
+  width: 6rpx;
+  height: 28rpx;
+  background: linear-gradient(180deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  border-radius: 3rpx;
+}
+
+.feedback-char-count {
+  font-size: 24rpx;
+  color: var(--baby-text-light);
+  font-weight: 500;
+}
+
+.feedback-input-optional {
+  font-size: 22rpx;
+  color: var(--baby-text-light);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+}
+
+/* 文本域容器 */
+.feedback-textarea-wrapper {
+  position: relative;
+  background: #FAFAFA;
+  border-radius: 20rpx;
+  padding: 4rpx;
+  transition: all 0.3s ease;
+}
+
+.feedback-textarea-wrapper:focus-within {
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  box-shadow: 0 8rpx 24rpx rgba(102, 201, 168, 0.2);
 }
 
 .feedback-textarea {
   width: 100%;
-  height: 200rpx;
-  padding: 20rpx;
-  border: 2rpx solid #e0e0e0;
-  border-radius: 12rpx;
+  height: 220rpx;
+  padding: 24rpx;
+  border: none;
+  border-radius: 16rpx;
   font-size: 28rpx;
-  line-height: 1.5;
-  resize: none;
-  background-color: #f9f9f9;
-  margin-top: 10rpx;
+  line-height: 1.7;
+  background: #FAFAFA;
+  box-sizing: border-box;
+  color: var(--baby-text);
 }
 
 .feedback-textarea:focus {
-  border-color: #667eea;
+  background: #FFFFFF;
   outline: none;
-  background-color: white;
-  box-shadow: 0 0 0 2rpx rgba(102, 126, 234, 0.2);
 }
 
-.image-upload-container {
-  margin-top: 20rpx;
+.feedback-placeholder {
+  font-size: 28rpx;
+  color: #BDBDBD;
+  line-height: 1.7;
+}
+
+/* 图片上传区域 */
+.feedback-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
 .uploaded-images {
   display: flex;
   flex-wrap: wrap;
   gap: 20rpx;
-  margin-top: 10rpx;
 }
 
 .uploaded-image-item {
   position: relative;
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 12rpx;
+  width: 168rpx;
+  height: 168rpx;
+  border-radius: 16rpx;
   overflow: hidden;
-  border: 2rpx solid #e0e0e0;
+  border: 2rpx solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.uploaded-image-item:active {
+  transform: scale(0.96);
 }
 
 .uploaded-image {
@@ -1479,36 +1587,123 @@ page {
 
 .delete-image-btn {
   position: absolute;
-  top: 8rpx;
-  right: 8rpx;
-  width: 36rpx;
-  height: 36rpx;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
+  top: -8rpx;
+  right: -8rpx;
+  width: 44rpx;
+  height: 44rpx;
+  background: linear-gradient(135deg, #FF6B6B 0%, #EE5A5A 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: bold;
-  cursor: pointer;
+  box-shadow: 0 4rpx 12rpx rgba(238, 90, 90, 0.4);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.delete-image-btn:active {
+  transform: scale(0.9);
+}
+
+.delete-icon {
+  color: white;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: -2rpx;
 }
 
 .add-image-btn {
-  width: 160rpx;
-  height: 160rpx;
-  border: 2rpx dashed #e0e0e0;
-  border-radius: 12rpx;
+  width: 168rpx;
+  height: 168rpx;
+  border: 2rpx dashed #D0D0D0;
+  border-radius: 16rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 48rpx;
-  color: #999;
-  cursor: pointer;
+  gap: 8rpx;
+  background: #FAFAFA;
   transition: all 0.3s ease;
 }
 
-.add-image-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
+.add-image-btn:active {
+  background: #F0F0F0;
+  border-color: var(--baby-primary);
+  transform: scale(0.96);
+}
+
+.add-icon {
+  font-size: 48rpx;
+  color: var(--baby-primary);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.add-text {
+  font-size: 24rpx;
+  color: var(--baby-text-secondary);
+}
+
+.feedback-upload-hint {
+  font-size: 22rpx;
+  color: var(--baby-text-light);
+  margin-top: 4rpx;
+}
+
+/* 按钮区域 */
+.feedback-actions {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 8rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.04);
+}
+
+.feedback-cancel-btn {
+  flex: 1;
+  height: 88rpx;
+  background: #F5F5F5;
+  border: none;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.feedback-cancel-btn:active {
+  background: #E8E8E8;
+  transform: scale(0.98);
+}
+
+.feedback-cancel-btn .btn-text {
+  font-size: 30rpx;
+  color: var(--baby-text-secondary);
+  font-weight: 600;
+}
+
+.feedback-submit-btn {
+  flex: 1.5;
+  height: 88rpx;
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  border: none;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(102, 201, 168, 0.35);
+  transition: all 0.3s ease;
+}
+
+.feedback-submit-btn:active {
+  transform: translateY(2rpx) scale(0.98);
+  box-shadow: 0 4rpx 16rpx rgba(102, 201, 168, 0.3);
+}
+
+.feedback-submit-btn .btn-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+  letter-spacing: 2rpx;
 }

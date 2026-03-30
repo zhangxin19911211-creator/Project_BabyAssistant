@@ -17,7 +17,14 @@ Page({
     currentDate: util.formatTime(new Date()).replace(/\//g, '-')
   },
 
-  onLoad() {
+  async onLoad() {
+    // 检查权限
+    const hasPermission = await api.checkPermission(null, 'guardian')
+    if (!hasPermission) {
+      wx.showToast({ title: '只有一级助教才能添加宝宝', icon: 'none' })
+      setTimeout(() => wx.navigateBack(), 1500)
+      return
+    }
     this.loadFamilies()
   },
 

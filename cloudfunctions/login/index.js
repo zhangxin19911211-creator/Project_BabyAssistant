@@ -8,6 +8,16 @@ cloud.init({
 const db = cloud.database()
 const _ = db.command
 
+// 生成随机用户名
+function generateRandomNickName() {
+  const adjectives = ['快乐', '可爱', '聪明', '活泼', '乖巧', '甜蜜', '阳光', '温柔', '勇敢', '机灵']
+  const nouns = ['小熊', '小兔', '小鹿', '小猫', '小鱼', '小鸟', '小象', '小狐', '小虎', '小龙']
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const noun = nouns[Math.floor(Math.random() * nouns.length)]
+  const num = Math.floor(Math.random() * 100)
+  return adj + noun + num
+}
+
 // 云函数入口函数
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
@@ -86,6 +96,11 @@ exports.main = async (event, context) => {
       const openid = wxContext.OPENID
       const { familyName, userInfo } = event
       
+      // 验证家庭名称长度
+      if (familyName.trim().length > 7) {
+        throw new Error('家庭名称最多7个字符')
+      }
+      
       // 检查用户是否已经创建过家庭
       const createdFamilies = await db.collection('families').where({
         creatorOpenid: openid
@@ -104,7 +119,7 @@ exports.main = async (event, context) => {
         throw new Error('最多只能加入3个家庭')
       }
       
-      // 计算新的颜色索引，不占用已有颜色
+      // 计算新的颜色索引，不占用已有颜色（支持 3 种配色方案）
       const usedColors = joinedFamilies.data.map(f => f.colorIndex || 0)
       let newColorIndex = 0
       while (usedColors.includes(newColorIndex)) {
@@ -138,6 +153,11 @@ exports.main = async (event, context) => {
     // 处理更新家庭名称的操作
     if (action === 'updateFamilyName' && event.familyId && event.newName && event.openid) {
       const { familyId, newName, openid } = event
+      
+      // 验证家庭名称长度
+      if (newName.trim().length > 7) {
+        throw new Error('家庭名称最多7个字符')
+      }
       
       // 获取家庭信息
       const familyResult = await db.collection('families').doc(familyId).get()
@@ -667,7 +687,14 @@ exports.main = async (event, context) => {
           expireTime: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12小时过期
         }
       })
-      
+
+      // 异步清理过期邀请码（不阻塞主业务返回）
+      db.collection('inviteCodes').where({
+        expireTime: _.lt(new Date())
+      }).remove().catch(err => {
+        console.warn('清理过期邀请码失败', err)
+      })
+
       return { success: true, inviteCode: inviteCode }
     }
     
@@ -753,6 +780,7 @@ exports.main = async (event, context) => {
         // 创建新用户
         const newUser = {
           openid: wxContext.OPENID,
+          nickName: generateRandomNickName(),
           createTime: new Date(),
           lastLoginTime: new Date()
         }

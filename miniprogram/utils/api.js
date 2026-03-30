@@ -2,6 +2,50 @@ const { calculateAge, formatAgeString } = require('./util.js')
 const db = wx.cloud.database()
 const _ = db.command
 
+// ===== 缓存管理模块 =====
+const CACHE_CONFIG = {
+  families: { key: 'cache_families', ttl: 5 * 60 * 1000 }, // 5 分钟
+  babies: { key: 'cache_babies', ttl: 5 * 60 * 1000 }
+}
+
+// 设置缓存
+const setCache = (key, data) => {
+  try {
+    wx.setStorageSync(key, {
+      data: data,
+      timestamp: Date.now()
+    })
+  } catch (e) {
+    console.warn('设置缓存失败', e)
+  }
+}
+
+// 获取缓存
+const getCache = (key, ttl) => {
+  try {
+    const cached = wx.getStorageSync(key)
+    if (cached && cached.timestamp) {
+      const isExpired = Date.now() - cached.timestamp > ttl
+      if (!isExpired) {
+        return cached.data
+      }
+    }
+  } catch (e) {
+    console.warn('读取缓存失败', e)
+  }
+  return null
+}
+
+// 清除缓存
+const clearCache = (key) => {
+  try {
+    wx.removeStorageSync(key)
+  } catch (e) {
+    console.warn('清除缓存失败', e)
+  }
+}
+
+// ===== 登录验证模块 =====
 // 获取当前用户信息
 const getCurrentUser = () => {
   const app = getApp()
@@ -10,12 +54,12 @@ const getCurrentUser = () => {
   }
 }
 
-// 等待登录完成
+// 等待登录完成（带超时机制）
 const waitForLogin = () => {
   return new Promise((resolve, reject) => {
     const app = getApp()
     const startTime = Date.now()
-    const maxWaitTime = 5000 // 最大等待时间5秒
+    const maxWaitTime = 5000 // 最大等待时间 5 秒
     
     const checkLogin = () => {
       const currentTime = Date.now()
@@ -40,19 +84,25 @@ const waitForLogin = () => {
   })
 }
 
+// 统一的登录检查装饰器
+const ensureLogin = async () => {
+  let user = getCurrentUser()
+  if (!user || !user.openid) {
+    user = await waitForLogin()
+  }
+  return user
+}
+
 // 获取用户的宝宝列表
 const getBabies = async () => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      try {
-        // 等待登录完成
-        user = await waitForLogin()
-      } catch (loginError) {
-        console.error('登录失败', loginError)
-        return []
-      }
+    // 尝试从缓存读取
+    const cached = getCache(CACHE_CONFIG.babies.key, CACHE_CONFIG.babies.ttl)
+    if (cached) {
+      return cached
     }
+    
+    await ensureLogin()
     
     // 使用云函数获取宝宝列表（绕过数据库权限限制）
     const result = await wx.cloud.callFunction({
@@ -63,7 +113,10 @@ const getBabies = async () => {
     })
     
     if (result.result && result.result.success) {
-      return result.result.babies || []
+      const babies = result.result.babies || []
+      // 写入缓存
+      setCache(CACHE_CONFIG.babies.key, babies)
+      return babies
     } else {
       console.error('获取宝宝列表失败', result.result?.error)
       return []
@@ -149,19 +202,9 @@ const getRecordById = async (id) => {
 // 添加宝宝
 const addBaby = async (babyInfo) => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
-    }
+    await ensureLogin()
     
-    // 检查宝宝数量限制
-    const babies = await getBabies()
-    if (babies.length >= 3) {
-      throw new Error('最多只能添加3个宝宝')
-    }
-    
-    // 使用传入的familyId，如果没有则使用第一个家庭
+    // 先确定有效的 familyId（传入的或默认的第一个家庭）
     let familyId = babyInfo.familyId
     if (!familyId) {
       try {
@@ -174,6 +217,19 @@ const addBaby = async (babyInfo) => {
       }
     }
     
+    // 如果仍没有 familyId，抛出错误
+    if (!familyId) {
+      throw new Error('请选择所属家庭')
+    }
+    
+    // 检查宝宝数量限制（按家庭过滤）
+    const babies = await getBabies()
+    const babiesInFamily = babies.filter(b => b.familyId === familyId)
+    if (babiesInFamily.length >= 3) {
+      throw new Error('该家庭最多只能添加 3 个宝宝')
+    }
+    
+    const user = getCurrentUser()
     const newBaby = Object.assign({}, babyInfo, {
       openid: user.openid,
       familyId: familyId,
@@ -196,6 +252,9 @@ const addBaby = async (babyInfo) => {
       }, true)
     }
     
+    // 清除缓存，确保下次获取最新数据
+    clearCache(CACHE_CONFIG.babies.key)
+    
     return newBaby
   } catch (error) {
     console.error('添加宝宝失败', error)
@@ -206,12 +265,7 @@ const addBaby = async (babyInfo) => {
 // 删除宝宝
 const deleteBaby = async (id) => {
   try {
-    // 获取当前用户信息
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
-    }
+    await ensureLogin()
     
     // 使用云函数确保事务性
     const result = await wx.cloud.callFunction({
@@ -223,6 +277,8 @@ const deleteBaby = async (id) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除缓存
+      clearCache(CACHE_CONFIG.babies.key)
       return result.result
     } else {
       throw new Error(result.result?.error || '删除失败')
@@ -429,11 +485,13 @@ const updateBabyName = async (id, name) => {
 // 获取用户的所有家庭
 const getFamilies = async () => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
+    // 尝试从缓存读取
+    const cached = getCache(CACHE_CONFIG.families.key, CACHE_CONFIG.families.ttl)
+    if (cached) {
+      return cached
     }
+    
+    await ensureLogin()
     
     // 使用云函数获取家庭列表（绕过数据库权限限制）
     const result = await wx.cloud.callFunction({
@@ -444,7 +502,10 @@ const getFamilies = async () => {
     })
     
     if (result.result && result.result.success) {
-      return result.result.families || []
+      const families = result.result.families || []
+      // 写入缓存
+      setCache(CACHE_CONFIG.families.key, families)
+      return families
     } else {
       throw new Error(result.result?.error || '获取家庭信息失败')
     }
@@ -491,11 +552,8 @@ const getFamily = async () => {
 // 创建家庭
 const createFamily = async (familyName) => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
-    }
+    await ensureLogin()
+    const user = getCurrentUser()
     
     // 使用云函数创建家庭（绕过数据库权限限制）
     const result = await wx.cloud.callFunction({
@@ -512,6 +570,8 @@ const createFamily = async (familyName) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除缓存
+      clearCache(CACHE_CONFIG.families.key)
       return result.result.family
     } else {
       throw new Error(result.result?.error || '创建家庭失败')
@@ -620,11 +680,7 @@ const joinFamily = async (inviteCode) => {
 // 退出家庭
 const leaveFamily = async (familyId) => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
-    }
+    await ensureLogin()
     
     // 使用云函数退出家庭（绕过数据库权限限制）
     const result = await wx.cloud.callFunction({
@@ -636,6 +692,9 @@ const leaveFamily = async (familyId) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除缓存
+      clearCache(CACHE_CONFIG.families.key)
+      clearCache(CACHE_CONFIG.babies.key)
       return true
     } else {
       throw new Error(result.result?.error || '退出家庭失败')

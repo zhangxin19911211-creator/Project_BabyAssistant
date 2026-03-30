@@ -1,13 +1,7 @@
 <!--pages/index/index.wxml-->
 <view class="container">
   <view class="header">
-    <view class="header-decoration">
-      <view class="circle circle-1"></view>
-      <view class="circle circle-2"></view>
-      <view class="circle circle-3"></view>
-      <view class="leaf leaf-1"></view>
-      <view class="leaf leaf-2"></view>
-    </view>
+    <view class="header-decoration"></view>
     <view class="title-area">
       <view class="icon-wrapper">
         <text class="main-icon">🌱</text>

@@ -5,6 +5,27 @@ const formatTime = date => {
   return `${year}/${month}/${day}`
 }
 
+// 防抖函数：延迟执行，如果在延迟期间再次触发则重新计时
+const debounce = (fn, delay = 300) => {
+  let timer = null
+  return function(...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+
+// 节流函数：固定时间内只执行一次
+const throttle = (fn, delay = 300) => {
+  let lastTime = 0
+  return function(...args) {
+    const now = Date.now()
+    if (now - lastTime >= delay) {
+      lastTime = now
+      fn.apply(this, args)
+    }
+  }
+}
+
 const calculateAge = (birthDate, currentDate = new Date()) => {
   const birth = new Date(birthDate)
   const current = new Date(currentDate)
@@ -50,5 +71,7 @@ module.exports = {
   formatTime,
   calculateAge,
   calculateAgeInMonths,
-  formatAgeString
+  formatAgeString,
+  debounce,
+  throttle
 }

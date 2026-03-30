@@ -1,35 +1,29 @@
 /* pages/baby-detail/baby-detail.wxss */
-/* 温暖活力的婴儿主题配色 */
+/* 柔和夏日风配色 - Call Me By Your Name */
 page {
-  --baby-primary: #66C9A8;
-  --baby-primary-light: #E0F5EF;
-  --baby-primary-dark: #4DB896;
-  --baby-coral: #FFA69E;
-  --baby-coral-light: #FFE8E6;
-  --baby-yellow: #FFD166;
-  --baby-yellow-light: #FFF8E1;
-  --baby-blue: #64B5F6;
-  --baby-blue-light: #E3F2FD;
-  --baby-bg: #FDF5F0;
-  --baby-card: #FFFFFF;
-  --baby-text: #2D2D2D;
-  --baby-text-secondary: #5B6270;
-  --baby-text-light: #8C939F;
-  --baby-success: #5BCB67;
-  --baby-warning: #FFC107;
-  --baby-danger: #FF7B84;
-  --baby-shadow: rgba(102, 201, 168, 0.2);
-  
-  /* 角色配色 */
-  --guardian-color: #C62828;
-  --guardian-bg: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
-  --guardian-border: #EF9A9A;
-  --caretaker-color: #1565C0;
-  --caretaker-bg: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-  --caretaker-border: #90CAF9;
-  --viewer-color: #E65100;
-  --viewer-bg: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
-  --viewer-border: #FFB74D;
+  /* 3 种家庭配色方案 - 柔和夏日风 */
+  --family-color-0-primary: var(--cmbyn-color-1);
+  --family-color-0-light: rgba(135, 206, 235, 0.1);
+  --family-color-0-dark: var(--cmbyn-color-2);
+
+  --family-color-1-primary: var(--cmbyn-color-4);
+  --family-color-1-light: rgba(255, 160, 122, 0.1);
+  --family-color-1-dark: #D4725C;
+
+  --family-color-2-primary: var(--cat-color-2);
+  --family-color-2-light: rgba(145, 204, 117, 0.1);
+  --family-color-2-dark: #5A8A42;
+
+  /* 角色配色 - 柔和协调版 */
+  --guardian-color: #D65A5A;
+  --guardian-bg: linear-gradient(135deg, #FFF5F5 0%, #FFE8E8 100%);
+  --guardian-border: #F5C4C4;
+  --caretaker-color: #5A8FC4;
+  --caretaker-bg: linear-gradient(135deg, #F0F7FF 0%, #E0EFFF 100%);
+  --caretaker-border: #B8D4F0;
+  --viewer-color: #E89B5A;
+  --viewer-bg: linear-gradient(135deg, #FFF8F0 0%, #FFECD8 100%);
+  --viewer-border: #F5D4B8;
 }
 
 .container {
@@ -208,97 +202,188 @@ page {
   padding-bottom: 40rpx;
 }
 
+/* Record Card - 优化布局 */
 .record-card {
-  background-color: var(--baby-card);
-  border-radius: 28rpx;
-  padding: 36rpx;
-  margin-bottom: 24rpx;
-  position: relative;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
-  border: 2rpx solid rgba(127, 209, 185, 0.1);
+  background: linear-gradient(135deg, var(--baby-card) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-radius: 32rpx;
+  padding: 0;
+  margin-bottom: 28rpx;
+  box-shadow: 
+    0 4rpx 20rpx rgba(102, 201, 168, 0.08),
+    0 12rpx 40rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid rgba(127, 209, 185, 0.12);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.record-data {
+.record-card:active {
+  transform: scale(0.995);
+  box-shadow: 
+    0 2rpx 12rpx rgba(102, 201, 168, 0.06),
+    0 6rpx 20rpx rgba(0, 0, 0, 0.03);
+}
+
+/* Card Header - 日期与年龄 */
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  background: linear-gradient(135deg, var(--baby-primary-light) 0%, rgba(224, 245, 239, 0.5) 100%);
+  border-bottom: 2rpx solid rgba(127, 209, 185, 0.1);
+}
+
+.record-date {
   display: flex;
   align-items: center;
-  margin-bottom: 24rpx;
 }
 
-.data-row {
+.date-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background: linear-gradient(135deg, var(--baby-coral) 0%, #FF9A8B 100%);
+  border-radius: 50%;
+  margin-right: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(255, 182, 163, 0.4);
+}
+
+.date-text {
+  font-size: 28rpx;
+  color: var(--baby-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.5rpx;
+}
+
+.record-age {
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  color: var(--baby-card);
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(127, 209, 185, 0.3);
+}
+
+/* Card Body - 核心数据区 */
+.record-body {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  padding: 36rpx 32rpx;
+  gap: 20rpx;
+}
+
+.data-item {
+  display: flex;
+  align-items: center;
   flex: 1;
+  max-width: 40%;
+}
+
+.data-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.height-icon {
+  background: linear-gradient(135deg, var(--baby-primary-light) 0%, rgba(102, 201, 168, 0.2) 100%);
+  box-shadow: 0 4rpx 16rpx rgba(102, 201, 168, 0.2);
+}
+
+.height-icon .icon-text {
+  font-size: 32rpx;
+  color: var(--baby-primary-dark);
+  font-weight: bold;
+}
+
+.weight-icon {
+  background: linear-gradient(135deg, var(--baby-coral-light) 0%, rgba(255, 182, 163, 0.2) 100%);
+  box-shadow: 0 4rpx 16rpx rgba(255, 182, 163, 0.2);
+}
+
+.weight-icon .icon-text {
+  font-size: 28rpx;
+  color: #E57373;
+  font-weight: bold;
+}
+
+.data-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .data-label {
-  font-size: 26rpx;
-  color: var(--baby-text-secondary);
-  margin-right: 16rpx;
+  font-size: 24rpx;
+  color: var(--baby-text-light);
+  margin-bottom: 8rpx;
   font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.data-value-wrap {
+  display: flex;
+  align-items: baseline;
 }
 
 .data-value {
-  font-size: 44rpx;
+  font-size: 52rpx;
   font-weight: bold;
-  color: var(--baby-primary-dark);
+  color: var(--baby-text);
+  line-height: 1;
+  letter-spacing: -1rpx;
 }
 
-.unit {
+.data-unit {
   font-size: 24rpx;
   font-weight: 500;
-  margin-left: 6rpx;
+  margin-left: 8rpx;
   color: var(--baby-text-secondary);
 }
 
 .data-divider {
   width: 2rpx;
-  height: 40rpx;
-  background: linear-gradient(180deg, transparent 0%, var(--baby-primary) 50%, transparent 100%);
-  margin: 0 30rpx;
-}
-
-.record-meta {
-  display: flex;
-  align-items: center;
-  font-size: 24rpx;
-  color: var(--baby-text-light);
-}
-
-.time {
-  margin-right: 24rpx;
-  display: flex;
-  align-items: center;
-}
-
-.time::before {
-  content: '';
-  width: 8rpx;
-  height: 8rpx;
-  background: var(--baby-coral);
-  border-radius: 50%;
-  margin-right: 12rpx;
-}
-
-.record-age {
-  background: var(--baby-primary-light);
-  color: var(--baby-primary-dark);
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: 22rpx;
+  height: 70rpx;
+  background: linear-gradient(180deg, transparent 0%, rgba(127, 209, 185, 0.3) 20%, rgba(127, 209, 185, 0.5) 50%, rgba(127, 209, 185, 0.3) 80%, transparent 100%);
+  margin: 0 16rpx;
+  border-radius: 2rpx;
+  flex-shrink: 0;
 }
 
 .delete-btn {
-  position: absolute;
-  right: 30rpx;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  padding: 14rpx 24rpx;
+  background: linear-gradient(135deg, rgba(255, 139, 148, 0.08) 0%, rgba(255, 139, 148, 0.04) 100%);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 139, 148, 0.15);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.delete-btn:active {
+  background: linear-gradient(135deg, rgba(255, 139, 148, 0.15) 0%, rgba(255, 139, 148, 0.08) 100%);
+  border-color: rgba(255, 139, 148, 0.3);
+  transform: scale(0.96);
+}
+
+.delete-icon {
   font-size: 24rpx;
   color: var(--baby-danger);
-  padding: 12rpx 24rpx;
-  background: linear-gradient(135deg, rgba(255, 139, 148, 0.12) 0%, rgba(255, 139, 148, 0.06) 100%);
-  border-radius: 28rpx;
+  margin-right: 6rpx;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.delete-text {
+  font-size: 22rpx;
+  color: var(--baby-danger);
   font-weight: 500;
-  border: 2rpx solid rgba(255, 139, 148, 0.2);
 }
 
 /* Charts - 新设计 */

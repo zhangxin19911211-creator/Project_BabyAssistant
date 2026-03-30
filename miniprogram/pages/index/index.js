@@ -13,30 +13,46 @@ Page({
 
   async loadBabies() {
     try {
-      const babiesData = await api.getBabies()
-      const families = await api.getFamilies()
+      // 并行获取宝宝列表和家庭列表，减少等待时间
+      const [babiesData, families] = await Promise.all([
+        api.getBabies(),
+        api.getFamilies()
+      ])
+      
       const familyMap = {}
       const familyColorMap = {}
+      
+      // 为每个家庭分配固定颜色（基于家庭 ID 的哈希）
       families.forEach(function(f, index) {
         familyMap[f._id] = f.name
-        familyColorMap[f._id] = f.colorIndex !== undefined ? f.colorIndex : index % 3 // 使用家庭存储的颜色索引
+        // 使用简单的哈希算法，确保相同家庭总是获得相同颜色
+        let hash = 0
+        for (let i = 0; i < f._id.length; i++) {
+          hash = ((hash << 5) - hash) + f._id.charCodeAt(i)
+          hash = hash & hash // Convert to 32bit integer
+        }
+        const colorIndex = Math.abs(hash) % 3 // 映射到 0-2
+        familyColorMap[f._id] = colorIndex
       })
       
+      // 批量获取所有宝宝的最新记录（并行请求）
+      const latestRecords = await Promise.all(
+        babiesData.map(baby => api.getLatestRecord(baby._id))
+      )
+      
       // Process data for display
-      const formattedBabies = []
-      for (let i = 0; i < babiesData.length; i++) {
-        const baby = babiesData[i]
+      const formattedBabies = babiesData.map((baby, index) => {
         const ageObj = util.calculateAge(baby.birthDate)
         const ageStr = util.formatAgeString(ageObj)
-        const latestRecord = await api.getLatestRecord(baby._id)
+        const familyColorIndex = familyColorMap[baby.familyId] || 0
         
-        formattedBabies.push(Object.assign({}, baby, {
+        return Object.assign({}, baby, {
           ageStr: ageStr,
-          latestRecord: latestRecord,
+          latestRecord: latestRecords[index],
           familyName: familyMap[baby.familyId] || '未知家庭',
-          familyColorIndex: familyColorMap[baby.familyId] || 0
-        }))
-      }
+          familyColorIndex: familyColorIndex
+        })
+      })
       
       this.setData({
         babies: formattedBabies,

@@ -34,24 +34,50 @@
       
       <view class="record-list" wx:else>
         <view class="record-card" wx:for="{{records}}" wx:key="_id">
-          <view class="record-data">
-            <view class="data-row">
-              <text class="data-label">身高</text>
-              <text class="data-value">{{item.height}} <text class="unit">cm</text></text>
+          <!-- 卡片头部：日期与年龄 -->
+          <view class="record-header">
+            <view class="record-date">
+              <view class="date-dot"></view>
+              <text class="date-text">{{item.formattedDate}}</text>
             </view>
+            <view class="record-age">{{item.ageStr}}</view>
+          </view>
+          
+          <!-- 核心数据区 -->
+          <view class="record-body">
+            <view class="data-item">
+              <view class="data-icon height-icon">
+                <text class="icon-text">↑</text>
+              </view>
+              <view class="data-content">
+                <text class="data-label">身高</text>
+                <view class="data-value-wrap">
+                  <text class="data-value">{{item.height}}</text>
+                  <text class="data-unit">cm</text>
+                </view>
+              </view>
+            </view>
+            
             <view class="data-divider"></view>
-            <view class="data-row">
-              <text class="data-label">体重</text>
-              <text class="data-value">{{item.weight}} <text class="unit">kg</text></text>
+            
+            <view class="data-item">
+              <view class="data-icon weight-icon">
+                <text class="icon-text">⚖</text>
+              </view>
+              <view class="data-content">
+                <text class="data-label">体重</text>
+                <view class="data-value-wrap">
+                  <text class="data-value">{{item.weight}}</text>
+                  <text class="data-unit">kg</text>
+                </view>
+              </view>
+            </view>
+            
+            <view class="delete-btn" catchtap="deleteRecord" data-id="{{item._id}}">
+              <text class="delete-icon">×</text>
+              <text class="delete-text">删除</text>
             </view>
           </view>
-          
-          <view class="record-meta">
-            <text class="time">{{item.formattedDate}}</text>
-            <text class="record-age">{{item.ageStr}}</text>
-          </view>
-          
-          <view class="delete-btn" catchtap="deleteRecord" data-id="{{item._id}}">删除</view>
         </view>
       </view>
     </block>

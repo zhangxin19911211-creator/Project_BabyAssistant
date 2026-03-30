@@ -54,7 +54,7 @@
             <button class="action-btn-small leave-btn" bindtap="leaveFamily" data-family-id="{{item._id}}">
               <text class="btn-text">退出家庭</text>
             </button>
-            <button class="action-btn-small invite-btn" bindtap="openInviteModal" data-family-id="{{item._id}}">
+            <button wx:if="{{item.currentUserPermission !== 'viewer'}}" class="action-btn-small invite-btn" bindtap="openInviteModal" data-family-id="{{item._id}}">
               <text class="btn-text">邀请成员</text>
             </button>
           </view>
@@ -200,8 +200,8 @@
       <view class="join-form">
         <view class="input-container">
           <text class="input-label">家庭名称</text>
-          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{familyName}}" bindinput="onFamilyNameInput" />
-          <text class="input-hint">每个用户最多只能创建一个家庭</text>
+          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{familyName}}" bindinput="onFamilyNameInput" maxlength="7" />
+          <text class="input-hint">家庭名称最多7个字符，每个用户最多只能创建一个家庭</text>
         </view>
         <view class="form-actions">
           <button class="join-submit-btn" bindtap="submitCreateForm">
@@ -225,7 +225,8 @@
       <view class="join-form">
         <view class="input-container">
           <text class="input-label">家庭名称</text>
-          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{editFamilyName}}" bindinput="onEditFamilyNameInput" />
+          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{editFamilyName}}" bindinput="onEditFamilyNameInput" maxlength="7" />
+          <text class="input-hint">家庭名称最多7个字符</text>
         </view>
         <view class="form-actions">
           <button class="join-submit-btn" bindtap="submitEditNameForm">
@@ -274,37 +275,65 @@
   <!-- 反馈弹窗 -->
   <view wx:if="{{showFeedbackModal}}" class="modal-overlay" bindtap="closeFeedbackModal">
     <view class="modal-content feedback-modal" catchtap="noop">
-      <view class="join-modal-header">
-        <text class="modal-title">反馈问题</text>
-        <text class="modal-subtitle">请描述您遇到的问题或优化意见</text>
-      </view>
-      <view class="join-form">
-        <view class="input-container">
-          <text class="input-label">反馈内容</text>
-          <textarea class="feedback-textarea" placeholder="请详细描述您的问题或建议..." value="{{feedbackContent}}" bindinput="onFeedbackContentInput" maxlength="500" />
-          <text class="input-hint">{{feedbackContent.length}}/500</text>
+      <!-- 头部区域 -->
+      <view class="feedback-modal-header">
+        <view class="feedback-icon-wrapper">
+          <text class="feedback-icon">💬</text>
         </view>
-        <view class="input-container">
-          <text class="input-label">添加图片（可选）</text>
-          <view class="image-upload-container">
+        <text class="feedback-modal-title">反馈问题</text>
+        <text class="feedback-modal-subtitle">请描述您遇到的问题或优化意见，我们会尽快处理</text>
+      </view>
+
+      <!-- 表单区域 -->
+      <view class="feedback-form">
+        <!-- 反馈内容输入 -->
+        <view class="feedback-input-group">
+          <view class="feedback-input-header">
+            <text class="feedback-input-label">反馈内容</text>
+            <text class="feedback-char-count">{{feedbackContent.length}}/500</text>
+          </view>
+          <view class="feedback-textarea-wrapper">
+            <textarea
+              class="feedback-textarea"
+              placeholder="请详细描述您的问题或建议，我们会认真阅读每一条反馈..."
+              placeholder-class="feedback-placeholder"
+              value="{{feedbackContent}}"
+              bindinput="onFeedbackContentInput"
+              maxlength="500"
+            />
+          </view>
+        </view>
+
+        <!-- 图片上传 -->
+        <view class="feedback-input-group">
+          <view class="feedback-input-header">
+            <text class="feedback-input-label">添加图片</text>
+            <text class="feedback-input-optional">可选</text>
+          </view>
+          <view class="feedback-upload-wrapper">
             <view class="uploaded-images">
               <view wx:for="{{feedbackImages}}" wx:key="index" class="uploaded-image-item">
                 <image src="{{item}}" mode="aspectFill" class="uploaded-image"></image>
-                <view class="delete-image-btn" bindtap="deleteFeedbackImage" data-index="{{index}}">×</view>
+                <view class="delete-image-btn" bindtap="deleteFeedbackImage" data-index="{{index}}">
+                  <text class="delete-icon">×</text>
+                </view>
               </view>
               <view wx:if="{{feedbackImages.length < 3}}" class="add-image-btn" bindtap="chooseFeedbackImage">
-                <text>+</text>
+                <text class="add-icon">+</text>
+                <text class="add-text">添加</text>
               </view>
             </view>
-            <text class="input-hint">最多上传3张图片</text>
+            <text class="feedback-upload-hint">最多可上传3张图片，支持 JPG、PNG 格式</text>
           </view>
         </view>
-        <view class="form-actions">
-          <button class="join-submit-btn" bindtap="submitFeedback">
-            <text class="btn-text">提交反馈</text>
-          </button>
-          <button class="cancel-btn" bindtap="closeFeedbackModal">
+
+        <!-- 按钮区域 -->
+        <view class="feedback-actions">
+          <button class="feedback-cancel-btn" bindtap="closeFeedbackModal">
             <text class="btn-text">取消</text>
+          </button>
+          <button class="feedback-submit-btn" bindtap="submitFeedback">
+            <text class="btn-text">提交反馈</text>
           </button>
         </view>
       </view>
