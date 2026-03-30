@@ -1,73 +1,146 @@
 /* pages/baby-detail/baby-detail.wxss */
+/* 温暖活力的婴儿主题配色 */
+page {
+  --baby-primary: #66C9A8;
+  --baby-primary-light: #E0F5EF;
+  --baby-primary-dark: #4DB896;
+  --baby-coral: #FFA69E;
+  --baby-coral-light: #FFE8E6;
+  --baby-yellow: #FFD166;
+  --baby-yellow-light: #FFF8E1;
+  --baby-blue: #64B5F6;
+  --baby-blue-light: #E3F2FD;
+  --baby-bg: #FDF5F0;
+  --baby-card: #FFFFFF;
+  --baby-text: #2D2D2D;
+  --baby-text-secondary: #5B6270;
+  --baby-text-light: #8C939F;
+  --baby-success: #5BCB67;
+  --baby-warning: #FFC107;
+  --baby-danger: #FF7B84;
+  --baby-shadow: rgba(102, 201, 168, 0.2);
+  
+  /* 角色配色 */
+  --guardian-color: #C62828;
+  --guardian-bg: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+  --guardian-border: #EF9A9A;
+  --caretaker-color: #1565C0;
+  --caretaker-bg: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  --caretaker-border: #90CAF9;
+  --viewer-color: #E65100;
+  --viewer-bg: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+  --viewer-border: #FFB74D;
+}
+
 .container {
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background: linear-gradient(180deg, var(--baby-primary-light) 0%, var(--baby-bg) 30%);
   display: flex;
   flex-direction: column;
 }
 
+/* 头部信息区域 - 玻璃拟态效果 */
 .header-info {
   display: flex;
   align-items: center;
-  padding: 40rpx 30rpx;
-  background-color: var(--primary-color);
-  color: var(--white);
+  padding: 50rpx 40rpx;
+  margin: 20rpx 30rpx 0;
+  background: linear-gradient(135deg, var(--baby-card) 0%, var(--baby-primary-light) 100%);
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 32rpx var(--baby-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-info::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200rpx;
+  height: 200rpx;
+  background: radial-gradient(circle, var(--baby-coral-light) 0%, transparent 70%);
+  opacity: 0.6;
 }
 
 .avatar-container {
   position: relative;
-  width: 120rpx;
-  height: 120rpx;
+  width: 140rpx;
+  height: 140rpx;
   margin-right: 30rpx;
 }
 
 .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 60rpx;
-  background-color: rgba(255, 255, 255, 0.3);
-  border: 4rpx solid var(--white);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  border: 6rpx solid var(--baby-card);
+  box-shadow: 0 8rpx 24rpx rgba(127, 209, 185, 0.3);
 }
 
 .avatar-edit-icon {
   position: absolute;
-  right: -4rpx;
-  bottom: -4rpx;
-  width: 40rpx;
-  height: 40rpx;
-  background-color: var(--white);
-  color: var(--primary-color);
-  border-radius: 20rpx;
+  right: 0;
+  bottom: 0;
+  width: 44rpx;
+  height: 44rpx;
+  background: linear-gradient(135deg, var(--baby-coral) 0%, #FF9A8B 100%);
+  color: var(--baby-card);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: bold;
   line-height: 1;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  box-shadow: 0 4rpx 12rpx rgba(255, 182, 163, 0.4);
+  border: 3rpx solid var(--baby-card);
 }
 
 .info {
   display: flex;
   flex-direction: column;
+  z-index: 1;
 }
 
 .name {
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: bold;
-  margin-bottom: 10rpx;
+  color: var(--baby-text);
+  margin-bottom: 12rpx;
+  letter-spacing: 2rpx;
 }
 
 .age {
   font-size: 28rpx;
-  opacity: 0.9;
+  color: var(--baby-text-secondary);
+  background: rgba(127, 209, 185, 0.15);
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
+  display: inline-block;
+  margin-bottom: 12rpx;
 }
 
+.family {
+  font-size: 24rpx;
+  color: var(--baby-primary-dark);
+  background: linear-gradient(135deg, var(--baby-primary-light) 0%, rgba(127, 209, 185, 0.1) 100%);
+  padding: 6rpx 16rpx;
+  border-radius: 18rpx;
+  display: inline-block;
+  border: 2rpx solid rgba(127, 209, 185, 0.2);
+  font-weight: 500;
+}
+
+/* 导航标签 - 胶囊式设计 */
 .nav-tabs {
   display: flex;
-  background-color: var(--white);
-  padding: 0 20rpx;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+  background-color: var(--baby-card);
+  margin: 30rpx;
+  padding: 8rpx;
+  border-radius: 48rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 10;
 }
@@ -75,48 +148,46 @@
 .tab {
   flex: 1;
   text-align: center;
-  padding: 30rpx 0;
-  font-size: 30rpx;
-  color: var(--text-secondary);
+  padding: 24rpx 0;
+  font-size: 28rpx;
+  color: var(--baby-text-secondary);
   position: relative;
+  border-radius: 40rpx;
+  transition: all 0.3s ease;
 }
 
 .tab.active {
-  color: var(--primary-color);
-  font-weight: bold;
-}
-
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60rpx;
-  height: 6rpx;
-  background-color: var(--primary-color);
-  border-radius: 6rpx;
+  color: var(--baby-card);
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  box-shadow: 0 4rpx 16rpx rgba(127, 209, 185, 0.4);
 }
 
 .action-bar {
-  padding: 30rpx 30rpx 10rpx;
+  padding: 10rpx 30rpx 20rpx;
 }
 
 .add-btn {
-  background-color: var(--white);
-  color: var(--primary-color);
-  border: 2rpx solid var(--primary-color);
-  border-radius: 40rpx;
-  padding: 16rpx 0;
-  font-size: 28rpx;
-  font-weight: 500;
+  background: linear-gradient(135deg, var(--baby-coral) 0%, #FF9A8B 100%);
+  color: var(--baby-card);
+  border: none;
+  border-radius: 44rpx;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  font-weight: 600;
   text-align: center;
   line-height: normal;
+  box-shadow: 0 8rpx 24rpx rgba(255, 182, 163, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.add-btn:active {
+  transform: scale(0.98);
 }
 
 .content-area {
   flex: 1;
-  padding: 10rpx 20rpx;
+  padding: 10rpx 30rpx 30rpx;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -124,13 +195,13 @@
 
 /* Records List */
 .empty-state {
-  padding: 100rpx 0;
+  padding: 120rpx 0;
   text-align: center;
 }
 
 .empty-text {
-  color: var(--text-light);
-  font-size: 28rpx;
+  color: var(--baby-text-light);
+  font-size: 30rpx;
 }
 
 .record-list {
@@ -138,59 +209,82 @@
 }
 
 .record-card {
-  background-color: var(--white);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
+  background-color: var(--baby-card);
+  border-radius: 28rpx;
+  padding: 36rpx;
+  margin-bottom: 24rpx;
   position: relative;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid rgba(127, 209, 185, 0.1);
 }
 
 .record-data {
   display: flex;
   align-items: center;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .data-row {
   display: flex;
   align-items: baseline;
+  flex: 1;
 }
 
 .data-label {
   font-size: 26rpx;
-  color: var(--text-secondary);
-  margin-right: 12rpx;
+  color: var(--baby-text-secondary);
+  margin-right: 16rpx;
+  font-weight: 500;
 }
 
 .data-value {
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: bold;
-  color: var(--success);
+  color: var(--baby-primary-dark);
 }
 
 .unit {
   font-size: 24rpx;
-  font-weight: normal;
-  margin-left: 4rpx;
+  font-weight: 500;
+  margin-left: 6rpx;
+  color: var(--baby-text-secondary);
 }
 
 .data-divider {
   width: 2rpx;
-  height: 30rpx;
-  background-color: #E0E0E0;
-  margin: 0 40rpx;
+  height: 40rpx;
+  background: linear-gradient(180deg, transparent 0%, var(--baby-primary) 50%, transparent 100%);
+  margin: 0 30rpx;
 }
 
 .record-meta {
   display: flex;
   align-items: center;
   font-size: 24rpx;
-  color: var(--text-light);
+  color: var(--baby-text-light);
 }
 
 .time {
-  margin-right: 20rpx;
+  margin-right: 24rpx;
+  display: flex;
+  align-items: center;
+}
+
+.time::before {
+  content: '';
+  width: 8rpx;
+  height: 8rpx;
+  background: var(--baby-coral);
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+
+.record-age {
+  background: var(--baby-primary-light);
+  color: var(--baby-primary-dark);
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
 }
 
 .delete-btn {
@@ -199,53 +293,59 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 24rpx;
-  color: var(--danger);
-  padding: 10rpx 20rpx;
-  background-color: rgba(232, 92, 92, 0.1);
-  border-radius: 30rpx;
+  color: var(--baby-danger);
+  padding: 12rpx 24rpx;
+  background: linear-gradient(135deg, rgba(255, 139, 148, 0.12) 0%, rgba(255, 139, 148, 0.06) 100%);
+  border-radius: 28rpx;
+  font-weight: 500;
+  border: 2rpx solid rgba(255, 139, 148, 0.2);
 }
 
-/* Charts */
+/* Charts - 新设计 */
 .chart-container {
   width: 100%;
   flex: 1;
   min-height: 600rpx;
-  background-color: var(--white);
-  border-radius: 20rpx;
-  padding: 20rpx 0;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  background-color: var(--baby-card);
+  border-radius: 28rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
   margin-top: 10rpx;
   position: relative;
   overflow: visible;
+  border: 2rpx solid rgba(127, 209, 185, 0.1);
 }
 
 .legend {
   display: flex;
   justify-content: center;
   margin-top: 30rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid var(--baby-primary-light);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin: 0 20rpx;
-  font-size: 24rpx;
-  color: var(--text-secondary);
+  margin: 0 24rpx;
+  font-size: 26rpx;
+  color: var(--baby-text-secondary);
+  font-weight: 500;
 }
 
 .color-box {
-  width: 20rpx;
-  height: 6rpx;
+  width: 24rpx;
+  height: 8rpx;
   border-radius: 4rpx;
-  margin-right: 10rpx;
+  margin-right: 12rpx;
 }
 
 .color-box.standard {
-  background-color: #4169E1;
+  background: linear-gradient(90deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
 }
 
 .color-box.actual {
-  background-color: #32CD32;
+  background: linear-gradient(90deg, var(--baby-coral) 0%, #FF9A8B 100%);
 }
 
 ec-canvas {

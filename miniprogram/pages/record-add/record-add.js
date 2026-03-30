@@ -69,23 +69,28 @@ Page({
   },
 
   async submitForm() {
-    const { height, weight, recordDate } = this.data.formData
-
-    if (!height || isNaN(height) || height <= 0) {
-      return wx.showToast({ title: '请输入正确的身高', icon: 'none' })
-    }
-    if (!weight || isNaN(weight) || weight <= 0) {
-      return wx.showToast({ title: '请输入正确的体重', icon: 'none' })
-    }
-    if (!recordDate) {
-      return wx.showToast({ title: '请选择录入时间', icon: 'none' })
-    }
-    
-    if (this.data.calculatedAge === '录入时间不能早于出生日期') {
-      return wx.showToast({ title: '录入时间不能早于出生日期', icon: 'none' })
-    }
-
     try {
+      const hasPermission = await api.checkPermission(this.data.babyId, 'caretaker')
+      if (!hasPermission) {
+        return wx.showToast({ title: '只有监护人和照看者可以添加记录', icon: 'none' })
+      }
+      
+      const { height, weight, recordDate } = this.data.formData
+
+      if (!height || isNaN(height) || height <= 0) {
+        return wx.showToast({ title: '请输入正确的身高', icon: 'none' })
+      }
+      if (!weight || isNaN(weight) || weight <= 0) {
+        return wx.showToast({ title: '请输入正确的体重', icon: 'none' })
+      }
+      if (!recordDate) {
+        return wx.showToast({ title: '请选择录入时间', icon: 'none' })
+      }
+      
+      if (this.data.calculatedAge === '录入时间不能早于出生日期') {
+        return wx.showToast({ title: '录入时间不能早于出生日期', icon: 'none' })
+      }
+
       await api.addRecord({
         babyId: this.data.babyId,
         height: parseFloat(height),

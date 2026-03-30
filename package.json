@@ -1,0 +1,21 @@
+{
+  "name": "babyassistant_wechat_1",
+  "version": "1.0.0",
+  "description": "一款专为父母设计的宝宝成长记录工具，帮助您轻松追踪宝宝的成长数据。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangxin19911211-creator/Project_BabyAssistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/zhangxin19911211-creator/Project_BabyAssistant/issues"
+  },
+  "homepage": "https://github.com/zhangxin19911211-creator/Project_BabyAssistant#readme"
+}

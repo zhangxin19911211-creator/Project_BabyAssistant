@@ -14,23 +14,33 @@ Page({
   async loadBabies() {
     try {
       const babiesData = await api.getBabies()
+      const families = await api.getFamilies()
+      const familyMap = {}
+      const familyColorMap = {}
+      families.forEach(function(f, index) {
+        familyMap[f._id] = f.name
+        familyColorMap[f._id] = f.colorIndex !== undefined ? f.colorIndex : index % 3 // 使用家庭存储的颜色索引
+      })
       
       // Process data for display
       const formattedBabies = []
-      for (const baby of babiesData) {
+      for (let i = 0; i < babiesData.length; i++) {
+        const baby = babiesData[i]
         const ageObj = util.calculateAge(baby.birthDate)
         const ageStr = util.formatAgeString(ageObj)
         const latestRecord = await api.getLatestRecord(baby._id)
         
-        formattedBabies.push({
-          ...baby,
-          ageStr,
-          latestRecord
-        })
+        formattedBabies.push(Object.assign({}, baby, {
+          ageStr: ageStr,
+          latestRecord: latestRecord,
+          familyName: familyMap[baby.familyId] || '未知家庭',
+          familyColorIndex: familyColorMap[baby.familyId] || 0
+        }))
       }
       
       this.setData({
-        babies: formattedBabies
+        babies: formattedBabies,
+        families: families
       })
     } catch (error) {
       console.error('加载宝宝信息失败', error)
@@ -41,17 +51,44 @@ Page({
     }
   },
 
-  goToAddBaby() {
-    if (this.data.babies.length >= 4) {
+  async goToAddBaby() {
+    try {
+      // 检查用户是否有家庭
+      const families = await api.getFamilies()
+      if (families.length === 0) {
+        wx.showToast({
+          title: '请先新建家庭',
+          icon: 'none'
+        })
+        return
+      }
+      
+      const hasPermission = await api.checkPermission(null, 'guardian')
+      if (!hasPermission) {
+        wx.showToast({
+          title: '只有监护人才可以添加宝宝',
+          icon: 'none'
+        })
+        return
+      }
+      
+      if (this.data.babies.length >= 3) {
+        wx.showToast({
+          title: '最多只能添加3个宝宝',
+          icon: 'none'
+        })
+        return
+      }
+      wx.navigateTo({
+        url: '/pages/baby-add/baby-add'
+      })
+    } catch (error) {
+      console.error('检查权限失败', error)
       wx.showToast({
-        title: '最多只能添加4个宝宝',
+        title: '检查权限失败',
         icon: 'none'
       })
-      return
     }
-    wx.navigateTo({
-      url: '/pages/baby-add/baby-add'
-    })
   },
 
   goToDetail(e) {
@@ -63,27 +100,44 @@ Page({
 
   async deleteBaby(e) {
     const id = e.currentTarget.dataset.id
-    wx.showModal({
-      title: '确认删除',
-      content: '删除后宝宝的所有记录都将丢失，不可恢复',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            await api.deleteBaby(id)
-            await this.loadBabies()
-            wx.showToast({
-              title: '删除成功',
-              icon: 'success'
-            })
-          } catch (error) {
-            console.error('删除宝宝失败', error)
-            wx.showToast({
-              title: '删除失败，请重试',
-              icon: 'none'
-            })
+    try {
+      const hasPermission = await api.checkPermission(id, 'guardian')
+      if (!hasPermission) {
+        wx.showToast({
+          title: '只有监护人才可以删除宝宝',
+          icon: 'none'
+        })
+        return
+      }
+      
+      wx.showModal({
+        title: '确认删除',
+        content: '删除后宝宝的所有记录都将丢失，不可恢复',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              await api.deleteBaby(id)
+              await this.loadBabies()
+              wx.showToast({
+                title: '删除成功',
+                icon: 'success'
+              })
+            } catch (error) {
+              console.error('删除宝宝失败', error)
+              wx.showToast({
+                title: '删除失败，请重试',
+                icon: 'none'
+              })
+            }
           }
         }
-      }
-    })
+      })
+    } catch (error) {
+      console.error('检查权限失败', error)
+      wx.showToast({
+        title: '检查权限失败',
+        icon: 'none'
+      })
+    }
   }
 })

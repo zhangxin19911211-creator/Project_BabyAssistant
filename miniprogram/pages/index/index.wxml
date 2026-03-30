@@ -27,13 +27,16 @@
     </view>
 
     <block wx:else>
-      <view class="baby-card" wx:for="{{babies}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+      <view class="baby-card family-color-{{item.familyColorIndex}}" wx:for="{{babies}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
         <view class="card-content">
           <image class="avatar" src="{{item.avatarUrl || '/images/avatar.png'}}" mode="aspectFill"></image>
           <view class="baby-info">
             <view class="name-row">
               <text class="name">{{item.name}}</text>
               <text class="gender {{item.gender === 'male' ? 'male' : 'female'}}">{{item.gender === 'male' ? '♂' : '♀'}}</text>
+            </view>
+            <view class="family-tag">
+              <text class="family-name">{{item.familyName}}</text>
             </view>
             <view class="info-row">
               <text class="info-label">年龄：<text class="highlight">{{item.ageStr}}</text></text>
@@ -49,9 +52,9 @@
         </view>
       </view>
 
-      <view class="add-more-card" wx:if="{{babies.length < 4}}" bindtap="goToAddBaby">
+      <view class="add-more-card" wx:if="{{babies.length < 3}}" bindtap="goToAddBaby">
         <text class="plus-icon-large">+</text>
-        <text>添加宝宝（还可添加 {{4 - babies.length}} 个）</text>
+        <text>添加宝宝（还可添加 {{3 - babies.length}} 个）</text>
       </view>
     </block>
   </view>

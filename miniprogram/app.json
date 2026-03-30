@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/baby-add/baby-add",
     "pages/baby-detail/baby-detail",
-    "pages/record-add/record-add"
+    "pages/record-add/record-add",
+    "pages/family/family"
   ],
   "window": {
     "backgroundColor": "#F7F7F8",
@@ -11,6 +12,26 @@
     "navigationBarBackgroundColor": "#81C784",
     "navigationBarTitleText": "宝宝助手",
     "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "宝宝",
+        "iconPath": "images/Baby.png",
+        "selectedIconPath": "images/Baby.png"
+      },
+      {
+        "pagePath": "pages/family/family",
+        "text": "家庭",
+        "iconPath": "images/Family.png",
+        "selectedIconPath": "images/Family.png"
+      }
+    ],
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "selectedColor": "#81C784",
+    "color": "#666666"
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2",

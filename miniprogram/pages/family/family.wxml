@@ -1,0 +1,249 @@
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="header">
+    <view class="header-actions">
+      <button class="action-btn-small join-btn" bindtap="openJoinModal">
+        <text class="btn-text">加入家庭</text>
+      </button>
+      <button class="action-btn-small create-btn" bindtap="openCreateModal">
+        <text class="btn-text">新建家庭</text>
+      </button>
+    </view>
+  </view>
+  
+  <!-- 家庭列表 -->
+  <view class="families-section">
+    <view wx:if="{{families.length === 0}}" class="empty-state">
+      <image class="empty-icon" src="../../images/Family.png"></image>
+      <text class="empty-title">暂无家庭</text>
+      <text class="empty-subtitle">创建或加入家庭，与家人一起关注宝宝成长</text>
+      <view class="empty-buttons">
+        <button class="empty-btn" bindtap="openCreateModal">新建家庭</button>
+        <button class="empty-btn join-btn" bindtap="openJoinModal">加入家庭</button>
+      </view>
+    </view>
+    
+    <view wx:else class="families-list">
+      <view class="family-card color-{{item.colorIndex || index % 3}}" wx:for="{{families}}" wx:key="_id">
+        <view class="family-header color-{{item.colorIndex || index % 3}}">
+          <view class="family-info">
+            <text class="family-name">我的家庭：{{item.name}}</text>
+            <text class="family-member-count">{{item.members.length}} 位成员</text>
+          </view>
+          <view class="family-header-actions">
+            <button class="action-btn-small edit-name-btn" bindtap="openEditNameModal" data-family-id="{{item._id}}">
+              <text class="btn-text">修改名称</text>
+            </button>
+            <button class="action-btn-small leave-btn" bindtap="leaveFamily" data-family-id="{{item._id}}">
+              <text class="btn-text">退出家庭</text>
+            </button>
+            <button class="action-btn-small invite-btn" bindtap="openInviteModal" data-family-id="{{item._id}}">
+              <text class="btn-text">邀请成员</text>
+            </button>
+          </view>
+        </view>
+        
+        <view class="members-list">
+          <view class="member-card" wx:for="{{item.members}}" wx:key="openid" wx:for-item="member">
+            <view class="member-avatar" catchtap="onMemberAvatarTap" data-member="{{member}}" data-family-id="{{item._id}}">
+              <image class="avatar" src="{{member.avatarUrl || '../../images/avatar.png'}}" mode="aspectFill"></image>
+              <text wx:if="{{member.openid === item.creatorOpenid}}" class="creator-badge">创建者</text>
+            </view>
+            <view class="member-info" catchtap="onMemberNameTap" data-member="{{member}}" data-family-id="{{item._id}}">
+              <view class="member-name-container">
+                <text class="member-name">{{member.nickName.length > 6 ? member.nickName.substring(0, 6) + '...' : member.nickName}}</text>
+              </view>
+              <text class="member-role {{member.permission}}">{{member.permission === 'guardian' ? '监护人' : member.permission === 'caretaker' ? '照看者' : '围观者'}}</text>
+            </view>
+            <view class="member-actions">
+              <button wx:if="{{currentUser.openid === item.creatorOpenid && member.openid !== item.creatorOpenid}}" class="action-btn edit-btn" bindtap="openPermissionModal" data-member="{{member}}" data-family-id="{{item._id}}">权限调整</button>
+              <button wx:if="{{currentUser.openid === item.creatorOpenid && member.openid !== item.creatorOpenid}}" class="action-btn delete-btn" bindtap="removeMember" data-member="{{member}}" data-family-id="{{item._id}}">移除</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 权限说明 -->
+  <view class="permission-section">
+    <text class="section-title">权限说明</text>
+    <view class="permission-card">
+      <view class="permission-item">
+        <text class="permission-name guardian">监护人</text>
+        <text class="permission-desc">最高权限，可以新增和删除宝宝，可以新增和删除身高体重等数据，可以移除家庭成员，可以修改家庭成员权限</text>
+      </view>
+      <view class="permission-item">
+        <text class="permission-name caretaker">照看者</text>
+        <text class="permission-desc">无法新增和删除宝宝，仅可以新增宝宝身高体重数据</text>
+      </view>
+      <view class="permission-item">
+        <text class="permission-name viewer">围观者</text>
+        <text class="permission-desc">只能查看宝宝数据</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 邀请成员弹窗 -->
+  <view wx:if="{{showInviteModal}}" class="modal-overlay" bindtap="closeInviteModal">
+    <view class="modal-content invite-modal" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">邀请成员</text>
+        <text class="modal-subtitle">选择邀请的成员角色</text>
+      </view>
+      <view class="invite-options">
+        <button class="invite-option-card guardian-card" bindtap="inviteMember" data-member-type="guardian">
+          <view class="card-content">
+            <text class="role-title">监护人</text>
+            <text class="role-desc">最高权限，可管理宝宝和成员</text>
+          </view>
+        </button>
+        <button class="invite-option-card caretaker-card" bindtap="inviteMember" data-member-type="caretaker">
+          <view class="card-content">
+            <text class="role-title">照看者</text>
+            <text class="role-desc">可添加宝宝成长记录</text>
+          </view>
+        </button>
+        <button class="invite-option-card viewer-card" bindtap="inviteMember" data-member-type="viewer">
+          <view class="card-content">
+            <text class="role-title">围观者</text>
+            <text class="role-desc">仅可查看宝宝成长数据</text>
+          </view>
+        </button>
+      </view>
+      <button class="cancel-btn" bindtap="closeInviteModal">取消</button>
+    </view>
+  </view>
+
+  <!-- 邀请码展示弹窗 -->
+  <view wx:if="{{showInviteCodeModal}}" class="modal-overlay" bindtap="closeInviteCodeModal">
+    <view class="modal-content invite-code-modal" catchtap="noop">
+      <text class="modal-title">邀请成员</text>
+      <text class="invite-code-label">请将此邀请码分享给家人</text>
+      <view class="invite-code-display">
+        <text class="invite-code-text">{{currentInviteCode}}</text>
+      </view>
+      <view class="invite-code-actions">
+        <button class="action-btn copy-btn" bindtap="copyInviteCode">
+          <text class="btn-text">复制</text>
+        </button>
+        <button class="action-btn share-btn" open-type="share" data-invite-code="{{currentInviteCode}}">
+          <text class="btn-text">转发</text>
+        </button>
+      </view>
+      <button class="cancel-btn" bindtap="closeInviteCodeModal">关闭</button>
+    </view>
+  </view>
+  
+  <!-- 修改权限弹窗 -->
+  <view wx:if="{{showPermissionModal}}" class="modal-overlay" bindtap="closePermissionModal">
+    <view class="modal-content" catchtap="noop">
+      <text class="modal-title">修改权限</text>
+      <view class="permission-options">
+        <button class="permission-option-btn guardian-btn" bindtap="updatePermission" data-permission="guardian">监护人</button>
+        <button class="permission-option-btn caretaker-btn" bindtap="updatePermission" data-permission="caretaker">照看者</button>
+        <button class="permission-option-btn viewer-btn" bindtap="updatePermission" data-permission="viewer">围观者</button>
+      </view>
+      <button class="cancel-btn" bindtap="closePermissionModal">取消</button>
+    </view>
+  </view>
+  
+  <!-- 加入家庭弹窗 -->
+  <view wx:if="{{showJoinModal}}" class="modal-overlay" bindtap="closeJoinModal">
+    <view class="modal-content join-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">加入家庭</text>
+        <text class="modal-subtitle">输入邀请码加入家庭，与家人一起关注宝宝成长</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">邀请码</text>
+          <input class="invite-code-input" placeholder="请输入邀请码" value="{{inviteCode}}" bindinput="onInviteCodeInput" />
+          <text class="input-hint">邀请码由 8 位字母和数字组成</text>
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitJoinForm">
+            <text class="btn-text">确认加入</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeJoinModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 新建家庭弹窗 -->
+  <view wx:if="{{showCreateModal}}" class="modal-overlay" bindtap="closeCreateModal">
+    <view class="modal-content join-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">新建家庭</text>
+        <text class="modal-subtitle">创建一个新家庭，与家人一起关注宝宝成长</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">家庭名称</text>
+          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{familyName}}" bindinput="onFamilyNameInput" />
+          <text class="input-hint">每个用户最多只能创建一个家庭</text>
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitCreateForm">
+            <text class="btn-text">创建家庭</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeCreateModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 修改家庭名称弹窗 -->
+  <view wx:if="{{showEditNameModal}}" class="modal-overlay" bindtap="closeEditNameModal">
+    <view class="modal-content join-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">修改家庭名称</text>
+        <text class="modal-subtitle">修改当前家庭的名称</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">家庭名称</text>
+          <input class="invite-code-input" placeholder="请输入家庭名称" value="{{editFamilyName}}" bindinput="onEditFamilyNameInput" />
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitEditNameForm">
+            <text class="btn-text">保存</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeEditNameModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 修改用户名弹窗 -->
+  <view wx:if="{{showEditNicknameModal}}" class="modal-overlay" bindtap="closeEditNicknameModal">
+    <view class="modal-content join-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">修改用户名</text>
+        <text class="modal-subtitle">修改您在家庭中显示的用户名</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">用户名</text>
+          <input class="invite-code-input" placeholder="请输入用户名" value="{{editNickname}}" bindinput="onEditNicknameInput" maxlength="7" />
+          <text class="input-hint">用户名最多7个字符</text>
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitEditNicknameForm">
+            <text class="btn-text">保存</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeEditNicknameModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

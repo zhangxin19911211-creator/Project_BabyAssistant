@@ -54,9 +54,20 @@ const getBabies = async () => {
       }
     }
     
-    const result = await db.collection('babies').where({ openid: user.openid }).get()
+    // 使用云函数获取宝宝列表（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getBabies'
+      }
+    })
     
-    return result.data || []
+    if (result.result && result.result.success) {
+      return result.result.babies || []
+    } else {
+      console.error('获取宝宝列表失败', result.result?.error)
+      return []
+    }
   } catch (error) {
     console.error('获取宝宝列表失败', error)
     return []
@@ -78,12 +89,21 @@ const getBabyById = async (id) => {
       }
     }
     
-    const result = await db.collection('babies').doc(id).get()
-    // 验证宝宝是否属于当前用户
-    if (result.data && result.data.openid !== user.openid) {
+    // 使用云函数获取宝宝信息，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getBabyById',
+        babyId: id
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.baby
+    } else {
+      console.error('获取宝宝信息失败', result.result?.error)
       return null
     }
-    return result.data
   } catch (error) {
     console.error('获取宝宝信息失败', error)
     return null
@@ -101,15 +121,28 @@ const addBaby = async (babyInfo) => {
     
     // 检查宝宝数量限制
     const babies = await getBabies()
-    if (babies.length >= 4) {
-      throw new Error('最多只能添加4个宝宝')
+    if (babies.length >= 3) {
+      throw new Error('最多只能添加3个宝宝')
     }
     
-    const newBaby = {
-      ...babyInfo,
-      openid: user.openid,
-      createTime: new Date()
+    // 使用传入的familyId，如果没有则使用第一个家庭
+    let familyId = babyInfo.familyId
+    if (!familyId) {
+      try {
+        const families = await getFamilies()
+        if (families.length > 0) {
+          familyId = families[0]._id
+        }
+      } catch (error) {
+        console.error('获取家庭信息失败', error)
+      }
     }
+    
+    const newBaby = Object.assign({}, babyInfo, {
+      openid: user.openid,
+      familyId: familyId,
+      createTime: new Date()
+    })
     
     const result = await db.collection('babies').add({
       data: newBaby
@@ -144,12 +177,6 @@ const deleteBaby = async (id) => {
       user = await waitForLogin()
     }
     
-    // 验证宝宝是否存在且属于当前用户
-    const baby = await db.collection('babies').doc(id).get()
-    if (!baby.data || baby.data.openid !== user.openid) {
-      throw new Error('无权限删除此宝宝信息')
-    }
-    
     // 使用云函数确保事务性
     const result = await wx.cloud.callFunction({
       name: 'login',
@@ -162,7 +189,7 @@ const deleteBaby = async (id) => {
     if (result.result && result.result.success) {
       return result.result
     } else {
-      throw new Error('删除失败')
+      throw new Error(result.result?.error || '删除失败')
     }
   } catch (error) {
     console.error('删除宝宝失败', error)
@@ -195,11 +222,21 @@ const getRecords = async () => {
 // 根据宝宝ID获取记录
 const getRecordsByBabyId = async (babyId) => {
   try {
-    const result = await db.collection('records').where({
-      babyId: babyId
-    }).orderBy('recordDate', 'desc').get()
+    // 使用云函数获取宝宝记录，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getRecordsByBabyId',
+        babyId: babyId
+      }
+    })
     
-    return result.data || []
+    if (result.result && result.result.success) {
+      return result.result.records || []
+    } else {
+      console.error('获取宝宝记录失败', result.result?.error)
+      return []
+    }
   } catch (error) {
     console.error('获取宝宝记录失败', error)
     return []
@@ -220,9 +257,26 @@ const getLatestRecord = async (babyId) => {
 // 添加记录
 const addRecord = async (recordInfo, isBirth = false) => {
   try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      user = await waitForLogin()
+    }
+    
     const baby = await getBabyById(recordInfo.babyId)
     if (!baby) {
       throw new Error('宝宝不存在')
+    }
+    
+    // 检查用户权限（照看者和监护人可以添加记录）
+    const families = await getFamilies()
+    const family = families.find(f => f._id === baby.familyId)
+    if (!family) {
+      throw new Error('无权限为此宝宝添加记录')
+    }
+    
+    const currentMember = family.members.find(m => m.openid === user.openid)
+    if (!currentMember || currentMember.permission === 'viewer') {
+      throw new Error('只有照看者和监护人才可以添加记录')
     }
     
     let ageInMonths = 0
@@ -231,11 +285,11 @@ const addRecord = async (recordInfo, isBirth = false) => {
       ageInMonths = ageObj.years * 12 + ageObj.months + (ageObj.days >= 15 ? 0.5 : 0)
     }
     
-    const newRecord = {
-      ...recordInfo,
-      ageInMonths,
+    const newRecord = Object.assign({}, recordInfo, {
+      ageInMonths: ageInMonths,
+      openid: user.openid,
       createTime: new Date()
-    }
+    })
     
     const result = await db.collection('records').add({
       data: newRecord
@@ -252,6 +306,37 @@ const addRecord = async (recordInfo, isBirth = false) => {
 // 删除记录
 const deleteRecord = async (id) => {
   try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      user = await waitForLogin()
+    }
+    
+    // 获取记录信息
+    const recordResult = await db.collection('records').doc(id).get()
+    const record = recordResult.data
+    
+    if (!record) {
+      throw new Error('记录不存在')
+    }
+    
+    // 获取宝宝信息
+    const baby = await getBabyById(record.babyId)
+    if (!baby) {
+      throw new Error('宝宝不存在')
+    }
+    
+    // 检查用户权限（监护人可以删除记录）
+    const families = await getFamilies()
+    const family = families.find(f => f._id === baby.familyId)
+    if (!family) {
+      throw new Error('无权限删除此记录')
+    }
+    
+    const currentMember = family.members.find(m => m.openid === user.openid)
+    if (!currentMember || currentMember.permission !== 'guardian') {
+      throw new Error('只有监护人才可以删除记录')
+    }
+    
     await db.collection('records').doc(id).remove()
   } catch (error) {
     console.error('删除记录失败', error)
@@ -286,14 +371,478 @@ const updateBabyAvatar = async (id, avatarUrl) => {
   }
 }
 
+// 更新宝宝姓名
+const updateBabyName = async (id, name) => {
+  try {
+    // 验证姓名长度
+    if (!name || name.trim().length === 0) {
+      throw new Error('宝宝姓名不能为空')
+    }
+    if (name.trim().length > 7) {
+      throw new Error('宝宝姓名最多7个字符')
+    }
+    
+    // 使用云函数更新宝宝姓名，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'updateBabyName',
+        babyId: id,
+        name: name.trim()
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result
+    } else {
+      throw new Error(result.result?.error || '更新宝宝姓名失败')
+    }
+  } catch (error) {
+    console.error('更新宝宝姓名失败', error)
+    throw error
+  }
+}
+
+// 获取用户的所有家庭
+const getFamilies = async () => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数获取家庭列表（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getFamilies'
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.families || []
+    } else {
+      throw new Error(result.result?.error || '获取家庭信息失败')
+    }
+  } catch (error) {
+    console.error('获取家庭信息失败', error)
+    throw error
+  }
+}
+
+// 获取单个家庭信息
+const getFamilyById = async (familyId) => {
+  try {
+    // 使用云函数获取家庭信息，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getFamilyById',
+        familyId: familyId
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.family
+    } else {
+      throw new Error(result.result?.error || '获取家庭信息失败')
+    }
+  } catch (error) {
+    console.error('获取家庭信息失败', error)
+    throw error
+  }
+}
+
+// 获取当前家庭（兼容旧代码）
+const getFamily = async () => {
+  try {
+    const families = await getFamilies()
+    return families[0] || null
+  } catch (error) {
+    console.error('获取家庭信息失败', error)
+    return null
+  }
+}
+
+// 创建家庭
+const createFamily = async (familyName) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数创建家庭（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'createFamily',
+        familyName: familyName || '我的家庭',
+        userInfo: {
+          openid: user.openid,
+          nickName: user.nickName || '用户',
+          avatarUrl: user.avatarUrl || ''
+        }
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.family
+    } else {
+      throw new Error(result.result?.error || '创建家庭失败')
+    }
+  } catch (error) {
+    console.error('创建家庭失败', error)
+    throw error
+  }
+}
+
+// 创建邀请码
+const createInviteCode = async (familyId, memberType) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    if (!familyId || !memberType) {
+      throw new Error('缺少必要参数')
+    }
+    
+    // 使用云函数创建邀请码，绕过数据库权限限制
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'createInviteCode',
+        familyId: familyId,
+        memberType: memberType
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.inviteCode
+    } else {
+      throw new Error(result.result?.error || '创建邀请码失败')
+    }
+  } catch (error) {
+    console.error('创建邀请码失败', error)
+    throw error
+  }
+}
+
+// 加入家庭
+const joinFamily = async (inviteCode) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 检查用户加入的家庭数量
+    const joinedFamilies = await db.collection('families').where({
+      'members.openid': user.openid
+    }).get()
+    
+    if (joinedFamilies.data.length >= 3) {
+      throw new Error('最多只能加入3个家庭')
+    }
+    
+    // 准备成员信息，使用用户的实际用户名和头像
+    let nickName = user.nickName || user.userInfo?.nickName || '用户'
+    let avatarUrl = user.avatarUrl || user.userInfo?.avatarUrl || ''
+    
+    // 尝试从本地存储中获取用户信息
+    try {
+      const storageInfo = wx.getStorageSync('userInfo')
+      if (storageInfo) {
+        nickName = storageInfo.nickName || nickName
+        avatarUrl = storageInfo.avatarUrl || avatarUrl
+      }
+    } catch (e) {
+      console.error('获取本地存储用户信息失败', e)
+    }
+    
+    const memberInfo = {
+      openid: user.openid,
+      nickName: nickName,
+      avatarUrl: avatarUrl,
+      joinTime: new Date()
+    }
+    
+    // 使用云函数加入家庭（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'joinFamily',
+        inviteCode: inviteCode,
+        memberInfo: memberInfo
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '加入家庭失败')
+    }
+  } catch (error) {
+    console.error('加入家庭失败', error)
+    throw error
+  }
+}
+
+// 退出家庭
+const leaveFamily = async (familyId) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数退出家庭（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'leaveFamily',
+        familyId: familyId
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '退出家庭失败')
+    }
+  } catch (error) {
+    console.error('退出家庭失败', error)
+    throw error
+  }
+}
+
+// 更新成员信息（头像和用户名）
+const updateMemberInfo = async (familyId, nickName, avatarUrl) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数更新成员信息（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'updateMemberInfo',
+        familyId: familyId,
+        nickName: nickName,
+        avatarUrl: avatarUrl
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '更新成员信息失败')
+    }
+  } catch (error) {
+    console.error('更新成员信息失败', error)
+    throw error
+  }
+}
+
+// 更新家庭名称
+const updateFamilyName = async (familyId, newName) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数更新家庭名称（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'updateFamilyName',
+        familyId: familyId,
+        newName: newName,
+        openid: user.openid
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '更新家庭名称失败')
+    }
+  } catch (error) {
+    console.error('更新家庭名称失败', error)
+    throw error
+  }
+}
+
+// 更新成员权限
+const updateMemberPermission = async (familyId, memberOpenid, permission) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数更新成员权限（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'updateMemberPermission',
+        familyId: familyId,
+        memberOpenid: memberOpenid,
+        permission: permission,
+        openid: user.openid
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '更新成员权限失败')
+    }
+    
+    return true
+  } catch (error) {
+    console.error('更新成员权限失败', error)
+    throw error
+  }
+}
+
+// 移除家庭成员
+const removeFamilyMember = async (familyId, memberOpenid) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 使用云函数移除家庭成员（绕过数据库权限限制）
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'removeFamilyMember',
+        familyId: familyId,
+        memberOpenid: memberOpenid,
+        openid: user.openid
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return true
+    } else {
+      throw new Error(result.result?.error || '移除家庭成员失败')
+    }
+  } catch (error) {
+    console.error('移除家庭成员失败', error)
+    throw error
+  }
+}
+
+// 检查用户权限
+const checkPermission = async (babyId, requiredPermission) => {
+  try {
+    let user = getCurrentUser()
+    if (!user || !user.openid) {
+      // 等待登录完成
+      user = await waitForLogin()
+    }
+    
+    // 获取所有家庭
+    const families = await getFamilies()
+    
+    if (babyId) {
+      // 获取宝宝信息，找到所属家庭
+      const baby = await getBabyById(babyId)
+      if (!baby || !baby.familyId) {
+        throw new Error('宝宝不存在')
+      }
+      
+      // 找到宝宝所属的家庭
+      const family = families.find(f => f._id === baby.familyId)
+      if (!family) {
+        throw new Error('家庭不存在')
+      }
+      
+      // 找到当前用户在该家庭中的权限
+      const currentMember = family.members.find(member => member.openid === user.openid)
+      if (!currentMember) {
+        throw new Error('您不是该家庭成员')
+      }
+      
+      // 检查权限
+      const permissionLevels = {
+        'viewer': 1,
+        'caretaker': 2,
+        'guardian': 3
+      }
+      
+      const userPermissionLevel = permissionLevels[currentMember.permission]
+      const requiredPermissionLevel = permissionLevels[requiredPermission]
+      
+      return userPermissionLevel >= requiredPermissionLevel
+    } else {
+      // 如果没有提供 babyId，检查用户是否在任何家庭中具有所需权限
+      const permissionLevels = {
+        'viewer': 1,
+        'caretaker': 2,
+        'guardian': 3
+      }
+      
+      const requiredPermissionLevel = permissionLevels[requiredPermission]
+      
+      // 检查用户在任何家庭中的权限
+      for (const family of families) {
+        const currentMember = family.members.find(member => member.openid === user.openid)
+        if (currentMember) {
+          const userPermissionLevel = permissionLevels[currentMember.permission]
+          if (userPermissionLevel >= requiredPermissionLevel) {
+            return true
+          }
+        }
+      }
+      
+      // 用户在所有家庭中都没有所需权限
+      return false
+    }
+  } catch (error) {
+    console.error('检查权限失败', error)
+    return false
+  }
+}
+
 module.exports = {
   getBabies,
   getBabyById,
   addBaby,
   deleteBaby,
   updateBabyAvatar,
+  updateBabyName,
   getRecordsByBabyId,
   getLatestRecord,
   addRecord,
-  deleteRecord
+  deleteRecord,
+  getFamily,
+  getFamilies,
+  getFamilyById,
+  createFamily,
+  createInviteCode,
+  joinFamily,
+  leaveFamily,
+  updateMemberInfo,
+  updateFamilyName,
+  updateMemberPermission,
+  removeFamilyMember,
+  checkPermission
 }

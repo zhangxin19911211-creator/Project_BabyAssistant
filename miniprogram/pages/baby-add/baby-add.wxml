@@ -1,6 +1,18 @@
 <!--pages/baby-add/baby-add.wxml-->
 <view class="container">
+  <view class="page-title">添加宝宝</view>
+  <view class="page-subtitle">记录宝宝成长的起点</view>
+  
   <view class="form-container">
+    <view class="form-item">
+      <text class="label">所属家庭</text>
+      <picker mode="selector" range="{{familyOptions}}" range-key="name" bindchange="onFamilyChange">
+        <view class="picker-view {{!formData.familyId ? 'placeholder' : ''}}">
+          {{formData.familyName || '请选择所属家庭'}}
+        </view>
+      </picker>
+    </view>
+
     <view class="form-item">
       <text class="label">宝宝姓名</text>
       <input class="input" placeholder="请输入宝宝姓名" placeholder-class="placeholder" bindinput="onInput" data-field="name" value="{{formData.name}}" />

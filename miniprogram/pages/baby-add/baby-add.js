@@ -5,13 +5,44 @@ const util = require('../../utils/util.js')
 Page({
   data: {
     formData: {
+      familyId: '',
+      familyName: '',
       name: '',
       gender: 'male',
       birthDate: '',
       birthHeight: '',
       birthWeight: ''
     },
+    familyOptions: [],
     currentDate: util.formatTime(new Date()).replace(/\//g, '-')
+  },
+
+  onLoad() {
+    this.loadFamilies()
+  },
+
+  async loadFamilies() {
+    try {
+      const families = await api.getFamilies()
+      const familyOptions = families.map(f => ({
+        _id: f._id,
+        name: f.name
+      }))
+      this.setData({
+        familyOptions
+      })
+    } catch (error) {
+      console.error('加载家庭列表失败', error)
+    }
+  },
+
+  onFamilyChange(e) {
+    const index = e.detail.value
+    const selectedFamily = this.data.familyOptions[index]
+    this.setData({
+      'formData.familyId': selectedFamily._id,
+      'formData.familyName': selectedFamily.name
+    })
   },
 
   onInput(e) {
@@ -34,8 +65,11 @@ Page({
   },
 
   async submitForm() {
-    const { name, gender, birthDate, birthHeight, birthWeight } = this.data.formData
+    const { familyId, name, gender, birthDate, birthHeight, birthWeight } = this.data.formData
 
+    if (!familyId) {
+      return wx.showToast({ title: '请选择所属家庭', icon: 'none' })
+    }
     if (!name.trim()) {
       return wx.showToast({ title: '请输入宝宝姓名', icon: 'none' })
     }
@@ -51,6 +85,7 @@ Page({
 
     try {
       await api.addBaby({
+        familyId: familyId,
         name: name.trim(),
         gender,
         birthDate: birthDate.replace(/-/g, '/'),

@@ -7,8 +7,9 @@
       <view class="avatar-edit-icon">+</view>
     </view>
     <view class="info">
-      <text class="name">{{baby.name}}</text>
+      <text class="name" bindtap="onBabyNameTap">{{baby.name}}</text>
       <text class="age">{{baby.ageStr}}</text>
+      <text class="family" wx:if="{{baby.familyName}}">所属家庭：{{baby.familyName}}</text>
     </view>
   </view>
 
