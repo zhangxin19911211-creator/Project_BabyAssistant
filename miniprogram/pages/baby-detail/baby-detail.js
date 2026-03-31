@@ -565,33 +565,37 @@ Page({
         sourceType: ['album', 'camera'],
         success: async (res) => {
           const tempFilePath = res.tempFiles[0].tempFilePath;
-          wx.getFileSystemManager().saveFile({
-            tempFilePath: tempFilePath,
-            success: async (saveRes) => {
-              try {
-                await api.updateBabyAvatar(this.data.babyId, saveRes.savedFilePath);
-                this.setData({
-                  'baby.avatarUrl': saveRes.savedFilePath
-                });
-                wx.showToast({
-                  title: '头像已更新',
-                  icon: 'success'
-                });
-              } catch (error) {
-                console.error('更新头像失败', error);
-                wx.showToast({
-                  title: '更新头像失败，请重试',
-                  icon: 'none'
-                });
-              }
-            },
-            fail: () => {
-              wx.showToast({
-                title: '保存头像失败',
-                icon: 'none'
-              });
-            }
-          });
+
+          wx.showLoading({ title: '上传中...' })
+
+          try {
+            // 上传图片到云存储的avatars文件夹
+            const cloudPath = 'avatars/' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.jpg'
+            const uploadResult = await wx.cloud.uploadFile({
+              cloudPath: cloudPath,
+              filePath: tempFilePath
+            })
+
+            const fileID = uploadResult.fileID
+
+            // 更新宝宝头像
+            await api.updateBabyAvatar(this.data.babyId, fileID);
+            this.setData({
+              'baby.avatarUrl': fileID
+            });
+            wx.hideLoading()
+            wx.showToast({
+              title: '头像已更新',
+              icon: 'success'
+            });
+          } catch (error) {
+            wx.hideLoading()
+            console.error('更新头像失败', error);
+            wx.showToast({
+              title: '更新头像失败，请重试',
+              icon: 'none'
+            });
+          }
         }
       });
     } catch (error) {

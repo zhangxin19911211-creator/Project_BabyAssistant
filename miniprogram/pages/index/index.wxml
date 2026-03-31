@@ -48,7 +48,7 @@
 
       <view class="add-more-card" wx:if="{{canAddBaby}}" bindtap="goToAddBaby">
         <text class="plus-icon-large">+</text>
-        <text>添加宝宝（还可添加 {{maxBabies - babiesInGuardianFamilies}} 个）</text>
+        <text>添加宝宝（还可添加 {{availableSlots}} 个）</text>
       </view>
     </block>
   </view>

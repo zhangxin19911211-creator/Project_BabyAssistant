@@ -1,13 +1,15 @@
-﻿// pages/index/index.js
+// pages/index/index.js
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
 Page({
   data: {
     babies: [],
+    families: [],
     canAddBaby: false, // 是否可以添加宝宝
-    babiesInGuardianFamilies: 0, // 用户作为一级助教的家庭中的宝宝数量
-    maxBabies: 3 // 每个家庭最多宝宝数
+    availableSlots: 0, // 所有guardian家庭还能添加的宝宝总数
+    hasFamily: false, // 是否有家庭
+    isGuardian: false // 是否是一级助教
   },
 
   onShow() {
@@ -16,6 +18,9 @@ Page({
 
   async loadBabies() {
     try {
+      // 清除缓存，确保获取最新数据
+      api.clearCache('cache_babies')
+      api.clearCache('cache_families')
       // 并行获取宝宝列表和家庭列表，减少等待时间
       const [babiesData, families] = await Promise.all([
         api.getBabies(),
@@ -25,16 +30,11 @@ Page({
       const familyMap = {}
       const familyColorMap = {}
       
-      // 为每个家庭分配固定颜色（基于家庭 ID 的哈希）
+      // 为每个家庭分配固定颜色（使用数据库存储的 colorIndex 字段）
       families.forEach(function(f, index) {
         familyMap[f._id] = f.name
-        // 使用简单的哈希算法，确保相同家庭总是获得相同颜色
-        let hash = 0
-        for (let i = 0; i < f._id.length; i++) {
-          hash = ((hash << 5) - hash) + f._id.charCodeAt(i)
-          hash = hash & hash // Convert to 32bit integer
-        }
-        const colorIndex = Math.abs(hash) % 3 // 映射到 0-2
+        // 直接使用数据库中的 colorIndex，确保与家庭卡片颜色一致
+        const colorIndex = f.colorIndex !== undefined ? f.colorIndex : (index % 3)
         familyColorMap[f._id] = colorIndex
       })
       
@@ -73,15 +73,23 @@ Page({
 
   /**
    * 计算用户是否可以添加宝宝
+   * 按家庭独立检查：只要至少有一个guardian家庭的宝宝数<3，按钮就显示
    */
   calculateCanAddBaby(babies, families) {
     // 安全检查：确保用户已登录
     const app = getApp()
     if (!app.globalData || !app.globalData.userInfo || !app.globalData.userInfo.openid) {
-      return { canAddBaby: false, babiesInGuardianFamilies: 0 }
+      return { canAddBaby: false, availableSlots: 0, hasFamily: false, isGuardian: false }
     }
     
     const userOpenid = app.globalData.userInfo.openid
+    
+    // 检查是否有家庭
+    const hasFamily = families.length > 0
+    
+    if (!hasFamily) {
+      return { canAddBaby: false, availableSlots: 0, hasFamily: false, isGuardian: false }
+    }
     
     // 找出用户是一级助教的家庭
     const guardianFamilies = families.filter(f => {
@@ -89,78 +97,73 @@ Page({
       return member && member.permission === 'guardian'
     })
     
-    if (guardianFamilies.length === 0) {
-      return { canAddBaby: false, babiesInGuardianFamilies: 0 }
+    // 检查是否是一级助教
+    const isGuardian = guardianFamilies.length > 0
+    
+    if (!isGuardian) {
+      return { canAddBaby: false, availableSlots: 0, hasFamily: true, isGuardian: false }
     }
     
-    // 计算这些家庭中的宝宝总数
-    const guardianFamilyIds = guardianFamilies.map(f => f._id)
-    const babiesCount = babies.filter(baby => 
-      guardianFamilyIds.includes(baby.familyId)
-    ).length
+    // 按家庭独立检查：计算所有guardian家庭还能添加的宝宝总数
+    let canAddBaby = false
+    let availableSlots = 0
+    
+    for (const family of guardianFamilies) {
+      const babyCountInFamily = babies.filter(b => b.familyId === family._id).length
+      const slotsInFamily = 3 - babyCountInFamily
+      if (slotsInFamily > 0) {
+        availableSlots += slotsInFamily
+        canAddBaby = true
+      }
+    }
     
     return {
-      canAddBaby: babiesCount < 3,
-      babiesInGuardianFamilies: babiesCount
+      canAddBaby: canAddBaby,
+      availableSlots: availableSlots,
+      hasFamily: true,
+      isGuardian: true
     }
   },
 
   async goToAddBaby() {
-    try {
-      // 检查用户是否有家庭
-      const families = await api.getFamilies()
-      if (families.length === 0) {
-        wx.showToast({
-          title: '请先新建家庭',
-          icon: 'none'
-        })
-        return
-      }
-        
-      // 检查用户是否是某个家庭的一级助教
-      const userOpenid = getApp().globalData.userInfo.openid
-      const isGuardian = families.some(f => {
-        const member = f.members.find(m => m.openid === userOpenid)
-        return member && member.permission === 'guardian'
-      })
-        
-      if (!isGuardian) {
-        wx.showToast({
-          title: '只有一级助教才可以添加宝宝',
-          icon: 'none'
-        })
-        return
-      }
-        
-      // 检查该用户作为一级助教的家庭是否已经有 3 个宝宝
-      const guardianFamilies = families.filter(f => {
-        const member = f.members.find(m => m.openid === userOpenid)
-        return member && member.permission === 'guardian'
-      })
-        
-      const guardianFamilyIds = guardianFamilies.map(f => f._id)
-      const babiesInGuardianFamilies = this.data.babies.filter(baby => 
-        guardianFamilyIds.includes(baby.familyId)
-      )
-        
-      if (babiesInGuardianFamilies.length >= 3) {
-        wx.showToast({
-          title: '您的家庭最多只能添加 3 个宝宝',
-          icon: 'none'
-        })
-        return
-      }
-        
-      wx.navigateTo({
-        url: '/pages/baby-add/baby-add'
-      })
-    } catch (error) {
-      console.error('检查权限失败', error)
+    // 如果数据还没加载完成，先加载
+    if (!this.data.families || this.data.families.length === 0) {
+      await this.loadBabies()
+    }
+    
+    // 直接使用 families.length 判断，避免异步加载导致的状态不一致
+    const families = this.data.families || []
+    
+    // 情况1：没有家庭
+    if (families.length === 0) {
       wx.showToast({
-        title: '检查权限失败',
+        title: '请先加入家庭或新建家庭',
         icon: 'none'
       })
+      return
     }
+    
+    // 情况2：有家庭但不是一级助教
+    if (!this.data.isGuardian) {
+      wx.showToast({
+        title: '只有一级助教才可以添加宝宝',
+        icon: 'none'
+      })
+      return
+    }
+    
+    // 情况3：是一级助教但所有家庭宝宝数量已达上限
+    if (!this.data.canAddBaby) {
+      wx.showToast({
+        title: '您的家庭宝宝数量已达上限',
+        icon: 'none'
+      })
+      return
+    }
+    
+    wx.navigateTo({
+      url: '/pages/baby-add/baby-add'
+    })
   },
 
   goToDetail(e) {

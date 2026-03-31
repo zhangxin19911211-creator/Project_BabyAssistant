@@ -8,7 +8,17 @@ cloud.init({
 const db = cloud.database()
 const _ = db.command
 
-// 生成随机用户名
+// 生成随机7位字符用户名（字母+数字）
+function generateRandomUserName() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 7; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+// 生成随机昵称（中文，用于展示）
 function generateRandomNickName() {
   const adjectives = ['快乐', '可爱', '聪明', '活泼', '乖巧', '甜蜜', '阳光', '温柔', '勇敢', '机灵']
   const nouns = ['小熊', '小兔', '小鹿', '小猫', '小鱼', '小鸟', '小象', '小狐', '小虎', '小龙']
@@ -17,6 +27,9 @@ function generateRandomNickName() {
   const num = Math.floor(Math.random() * 100)
   return adj + noun + num
 }
+
+// 默认头像URL（使用系统内置头像）
+const DEFAULT_AVATAR_URL = ''
 
 // 云函数入口函数
 exports.main = async (event, context) => {
@@ -43,6 +56,30 @@ exports.main = async (event, context) => {
         // 如果都是或都不是创建者，按创建时间排序
         return new Date(b.createTime) - new Date(a.createTime)
       })
+      
+      // 确保每个家庭都有 colorIndex（为旧数据补充）
+      const usedColors = sortedFamilies.filter(f => f.colorIndex !== undefined).map(f => f.colorIndex)
+      for (const family of sortedFamilies) {
+        if (family.colorIndex === undefined) {
+          // 找到一个未使用的颜色
+          let newColorIndex = 0
+          while (usedColors.includes(newColorIndex)) {
+            newColorIndex = (newColorIndex + 1) % 3
+            if (usedColors.length >= 3) break
+          }
+          family.colorIndex = newColorIndex
+          usedColors.push(newColorIndex)
+          
+          // 更新数据库中的 colorIndex
+          try {
+            await db.collection('families').doc(family._id).update({
+              data: { colorIndex: newColorIndex }
+            })
+          } catch (updateError) {
+            console.warn('更新家庭颜色索引失败', updateError)
+          }
+        }
+      }
       
       return { success: true, families: sortedFamilies }
     }
@@ -297,6 +334,15 @@ exports.main = async (event, context) => {
         throw new Error('您已经是该家庭的成员')
       }
       
+      // 检查用户加入的家庭数量
+      const joinedFamilies = await db.collection('families').where({
+        'members.openid': openid
+      }).get()
+      
+      if (joinedFamilies.data.length >= 3) {
+        throw new Error('最多只能加入3个家庭')
+      }
+      
       // 获取用户的微信信息
       let userNickName = memberInfo.nickName
       let userAvatarUrl = memberInfo.avatarUrl
@@ -473,6 +519,64 @@ exports.main = async (event, context) => {
               }
             })
           }
+        }
+        
+        // 更新 users 集合中的用户昵称
+        try {
+          const userResult = await db.collection('users').where({ openid: openid }).get()
+          if (userResult.data.length > 0) {
+            await db.collection('users').doc(userResult.data[0]._id).update({
+              data: {
+                nickName: nickName,
+                'userInfo.nickName': nickName
+              }
+            })
+          } else {
+            // 如果用户不存在于 users 集合，创建新记录
+            await db.collection('users').add({
+              data: {
+                openid: openid,
+                nickName: nickName,
+                userInfo: {
+                  nickName: nickName
+                },
+                createTime: new Date(),
+                lastLoginTime: new Date()
+              }
+            })
+          }
+        } catch (userError) {
+          console.warn('更新用户信息失败', userError)
+        }
+      }
+      
+      // 更新 users 集合中的用户头像
+      if (avatarUrl !== undefined && avatarUrl !== null) {
+        try {
+          const userResult = await db.collection('users').where({ openid: openid }).get()
+          if (userResult.data.length > 0) {
+            await db.collection('users').doc(userResult.data[0]._id).update({
+              data: {
+                avatarUrl: avatarUrl,
+                'userInfo.avatarUrl': avatarUrl
+              }
+            })
+          } else {
+            // 如果用户不存在于 users 集合，创建新记录
+            await db.collection('users').add({
+              data: {
+                openid: openid,
+                avatarUrl: avatarUrl,
+                userInfo: {
+                  avatarUrl: avatarUrl
+                },
+                createTime: new Date(),
+                lastLoginTime: new Date()
+              }
+            })
+          }
+        } catch (userError) {
+          console.warn('更新用户头像失败', userError)
         }
       }
       
@@ -759,6 +863,78 @@ exports.main = async (event, context) => {
       return { success: true, deletedCount: deletedCount }
     }
     
+    // 处理更新用户信息的操作（直接更新 users 集合，并同步到所有家庭成员）
+    if (action === 'updateUserInfo') {
+      const openid = wxContext.OPENID
+      const { nickName, avatarUrl } = event
+      
+      try {
+        // 更新 users 集合中的用户信息
+        const userResult = await db.collection('users').where({ openid: openid }).get()
+        if (userResult.data.length > 0) {
+          const updateData = { lastLoginTime: new Date() }
+          if (nickName !== undefined && nickName !== null) {
+            updateData.nickName = nickName
+            updateData['userInfo.nickName'] = nickName
+          }
+          if (avatarUrl !== undefined && avatarUrl !== null) {
+            updateData.avatarUrl = avatarUrl
+            updateData['userInfo.avatarUrl'] = avatarUrl
+          }
+          
+          await db.collection('users').doc(userResult.data[0]._id).update({
+            data: updateData
+          })
+        } else {
+          // 如果用户不存在于 users 集合，创建新记录
+          const createData = {
+            openid: openid,
+            createTime: new Date(),
+            lastLoginTime: new Date(),
+            avatarUrl: DEFAULT_AVATAR_URL
+          }
+          if (nickName !== undefined && nickName !== null) {
+            createData.nickName = nickName
+            createData.userInfo = { nickName: nickName }
+          }
+          if (avatarUrl !== undefined && avatarUrl !== null) {
+            createData.avatarUrl = avatarUrl
+            if (!createData.userInfo) createData.userInfo = {}
+            createData.userInfo.avatarUrl = avatarUrl
+          }
+          
+          await db.collection('users').add({ data: createData })
+        }
+        
+        // 同步更新所有家庭中的成员信息
+        if (nickName !== undefined || avatarUrl !== undefined) {
+          const allFamilies = await db.collection('families').where({
+            'members.openid': openid
+          }).get()
+          
+          for (const family of allFamilies.data) {
+            const memberIndex = family.members.findIndex(m => m.openid === openid)
+            if (memberIndex !== -1) {
+              if (nickName !== undefined && nickName !== null) {
+                family.members[memberIndex].nickName = nickName
+              }
+              if (avatarUrl !== undefined && avatarUrl !== null) {
+                family.members[memberIndex].avatarUrl = avatarUrl
+              }
+              await db.collection('families').doc(family._id).update({
+                data: { members: family.members }
+              })
+            }
+          }
+        }
+        
+        return { success: true }
+      } catch (error) {
+        console.error('更新用户信息失败', error)
+        return { success: false, error: error.message }
+      }
+    }
+    
     // 处理登录操作
     if (code) {
       // 检查用户是否已存在
@@ -770,17 +946,31 @@ exports.main = async (event, context) => {
       if (userResult.data.length > 0) {
         // 用户已存在
         userInfo = userResult.data[0]
-        // 更新最后登录时间
-        await db.collection('users').doc(userInfo._id).update({
-          data: {
-            lastLoginTime: new Date()
-          }
-        })
+        // 确保老用户也有 avatarUrl 字段
+        if (!userInfo.avatarUrl) {
+          await db.collection('users').doc(userInfo._id).update({
+            data: {
+              avatarUrl: DEFAULT_AVATAR_URL,
+              lastLoginTime: new Date()
+            }
+          })
+          userInfo.avatarUrl = DEFAULT_AVATAR_URL
+        } else {
+          // 更新最后登录时间
+          await db.collection('users').doc(userInfo._id).update({
+            data: {
+              lastLoginTime: new Date()
+            }
+          })
+        }
       } else {
-        // 创建新用户
+        // 创建新用户 - 分配随机7位用户名和默认头像
+        const randomUserName = generateRandomUserName()
         const newUser = {
           openid: wxContext.OPENID,
-          nickName: generateRandomNickName(),
+          userName: randomUserName,  // 7位随机字符用户名
+          nickName: generateRandomNickName(),  // 中文昵称用于展示
+          avatarUrl: DEFAULT_AVATAR_URL,  // 默认头像
           createTime: new Date(),
           lastLoginTime: new Date()
         }

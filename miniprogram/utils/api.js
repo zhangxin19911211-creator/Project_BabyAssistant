@@ -254,6 +254,7 @@ const addBaby = async (babyInfo) => {
     
     // 清除缓存，确保下次获取最新数据
     clearCache(CACHE_CONFIG.babies.key)
+    clearCache(CACHE_CONFIG.families.key)
     
     return newBaby
   } catch (error) {
@@ -433,10 +434,16 @@ const updateBabyAvatar = async (id, avatarUrl) => {
       user = await waitForLogin()
     }
     
-    // 验证宝宝是否存在且属于当前用户
-    const baby = await db.collection('babies').doc(id).get()
-    if (!baby.data || baby.data.openid !== user.openid) {
-      throw new Error('无权限更新此宝宝信息')
+    // 验证宝宝是否存在且用户有权限
+    const baby = await getBabyById(id)
+    if (!baby) {
+      throw new Error('宝宝不存在')
+    }
+    
+    // 检查用户权限
+    const hasPermission = await checkPermission(id, 'guardian')
+    if (!hasPermission) {
+      throw new Error('只有一级助教才可以更新宝宝头像')
     }
     
     await db.collection('babies').doc(id).update({
@@ -444,6 +451,9 @@ const updateBabyAvatar = async (id, avatarUrl) => {
         avatarUrl: avatarUrl
       }
     })
+    
+    // 清除宝宝列表缓存，确保首页能看到更新后的头像
+    clearCache(CACHE_CONFIG.babies.key)
   } catch (error) {
     console.error('更新头像失败', error)
     throw error
@@ -472,6 +482,8 @@ const updateBabyName = async (id, name) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除宝宝列表缓存，确保所有用户能看到更新后的宝宝姓名
+      clearCache(CACHE_CONFIG.babies.key)
       return result.result
     } else {
       throw new Error(result.result?.error || '更新宝宝姓名失败')
@@ -667,6 +679,9 @@ const joinFamily = async (inviteCode) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除缓存，确保页面刷新时获取最新数据
+      clearCache(CACHE_CONFIG.families.key)
+      clearCache(CACHE_CONFIG.babies.key)
       return true
     } else {
       throw new Error(result.result?.error || '加入家庭失败')
@@ -757,6 +772,8 @@ const updateFamilyName = async (familyId, newName) => {
     })
     
     if (result.result && result.result.success) {
+      // 清除家庭列表缓存，确保小程序能看到更新后的家庭名称
+      clearCache(CACHE_CONFIG.families.key)
       return true
     } else {
       throw new Error(result.result?.error || '更新家庭名称失败')
@@ -927,5 +944,6 @@ module.exports = {
   updateFamilyName,
   updateMemberPermission,
   removeFamilyMember,
-  checkPermission
+  checkPermission,
+  clearCache
 }

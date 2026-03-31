@@ -1,5 +1,7 @@
 // pages/family/family.js
 const api = require('../../utils/api.js')
+const db = wx.cloud.database()
+const _ = db.command
 
 Page({
   data: {
@@ -32,10 +34,54 @@ Page({
 
   async loadFamilyInfo() {
     try {
+      // 清除家庭列表缓存，确保获取最新数据
+      api.clearCache('cache_families')
       const families = await api.getFamilies()
+      // 从 users 集合获取最新的用户信息（包括头像和用户名）
+      const db = wx.cloud.database()
+      const userResult = await db.collection('users').where({
+        openid: getApp().globalData.userInfo.openid
+      }).get()
+      
       let currentUser = getApp().globalData.userInfo
+      
+      // 如果数据库中有用户信息，使用数据库中的数据
+      if (userResult.data.length > 0) {
+        const dbUser = userResult.data[0]
+        currentUser = {
+          ...currentUser,
+          nickName: dbUser.nickName || currentUser.nickName,
+          avatarUrl: dbUser.avatarUrl || currentUser.avatarUrl,
+          userName: dbUser.userName || currentUser.userName
+        }
+        // 更新全局数据
+        getApp().globalData.userInfo = currentUser
+      }
 
-      // 构建用户在各家庭中的身份列表
+      // 收集所有家庭成员的openid，用于批量获取用户信息
+      const allMemberOpenids = new Set()
+      families.forEach(family => {
+        family.members.forEach(member => {
+          allMemberOpenids.add(member.openid)
+        })
+      })
+
+      // 从users集合批量获取所有成员的最新信息
+      const membersUserInfo = {}
+      if (allMemberOpenids.size > 0) {
+        const membersResult = await db.collection('users').where({
+          openid: _.in(Array.from(allMemberOpenids))
+        }).get()
+        
+        membersResult.data.forEach(user => {
+          membersUserInfo[user.openid] = {
+            nickName: user.nickName,
+            avatarUrl: user.avatarUrl
+          }
+        })
+      }
+
+      // 构建用户在各家庭中的身份列表，并更新家庭成员信息
       const userFamilyRoles = []
       if (families.length > 0) {
         const firstFamily = families[0]
@@ -49,6 +95,16 @@ Page({
 
         // 遍历所有家庭，获取用户在各家庭中的身份，并为每个家庭添加当前用户的权限
         families.forEach(family => {
+          // 更新家庭成员信息，从users集合获取最新数据
+          family.members = family.members.map(member => {
+            const userInfo = membersUserInfo[member.openid]
+            return {
+              ...member,
+              nickName: userInfo?.nickName || member.nickName,
+              avatarUrl: userInfo?.avatarUrl || member.avatarUrl
+            }
+          })
+
           const member = family.members.find(m => m.openid === currentUser.openid)
           if (member) {
             const permissionText = member.permission === 'guardian' ? '一级助教' : 
@@ -314,7 +370,7 @@ Page({
 
         try {
           // 上传图片到云存储
-          const cloudPath = 'avatars/' + Date.now() + '.jpg'
+          const cloudPath = 'avatars/' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.jpg'
           const uploadResult = await wx.cloud.uploadFile({
             cloudPath: cloudPath,
             filePath: tempFilePath
@@ -322,11 +378,14 @@ Page({
 
           const fileID = uploadResult.fileID
 
-          // 遍历所有家庭并更新头像
-          const families = this.data.families
-          for (const family of families) {
-            await api.updateMemberInfo(family._id, null, fileID)
-          }
+          // 调用 updateUserInfo 同步更新 users 集合和所有家庭中的成员信息
+          await wx.cloud.callFunction({
+            name: 'login',
+            data: {
+              action: 'updateUserInfo',
+              avatarUrl: fileID
+            }
+          })
 
           // 更新全局用户信息
           getApp().globalData.userInfo.avatarUrl = fileID
@@ -366,87 +425,7 @@ Page({
   },
 
   // 点击成员头像
-  onMemberAvatarTap(e) {
-    const member = e.currentTarget.dataset.member
-    const familyId = e.currentTarget.dataset.familyId
-    const currentUser = this.data.currentUser
 
-    // 只能修改自己的头像
-    if (member.openid !== currentUser.openid) {
-      wx.showToast({
-        title: '只能修改自己的头像',
-        icon: 'none'
-      })
-      return
-    }
-
-    // 选择图片上传
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      success: async (res) => {
-        const tempFilePath = res.tempFiles[0].tempFilePath
-
-        wx.showLoading({ title: '上传中...' })
-
-        try {
-          // 上传图片到云存储
-          const cloudPath = 'avatars/' + Date.now() + '.jpg'
-          const uploadResult = await wx.cloud.uploadFile({
-            cloudPath: cloudPath,
-            filePath: tempFilePath
-          })
-
-          const fileID = uploadResult.fileID
-
-          // 更新成员头像
-          await api.updateMemberInfo(familyId, null, fileID)
-
-          wx.hideLoading()
-          wx.showToast({
-            title: '头像更新成功',
-            icon: 'success'
-          })
-
-          this.loadFamilyInfo()
-        } catch (error) {
-          wx.hideLoading()
-          console.error('上传头像失败', error)
-          wx.showToast({
-            title: '上传头像失败',
-            icon: 'none'
-          })
-        }
-      },
-      fail: (error) => {
-        console.error('选择图片失败', error)
-      }
-    })
-  },
-
-  // 点击成员名称
-  onMemberNameTap(e) {
-    const member = e.currentTarget.dataset.member
-    const familyId = e.currentTarget.dataset.familyId
-    const currentUser = this.data.currentUser
-
-    // 只能修改自己的用户名
-    if (member.openid !== currentUser.openid) {
-      wx.showToast({
-        title: '只能修改自己的用户名',
-        icon: 'none'
-      })
-      return
-    }
-
-    this.setData({
-      showEditNicknameModal: true,
-      editNicknameMember: member,
-      editNickname: member.nickName,
-      selectedFamily: familyId
-    })
-  },
 
   // 关闭编辑昵称弹窗
   closeEditNicknameModal() {
@@ -466,7 +445,7 @@ Page({
 
   // 提交修改昵称
   async submitEditNicknameForm() {
-    const { editNickname, editNicknameMember, selectedFamily } = this.data
+    const { editNickname, editNicknameMember } = this.data
 
     if (!editNickname.trim()) {
       return wx.showToast({
@@ -483,11 +462,14 @@ Page({
     }
 
     try {
-      // 遍历所有家庭并更新用户名
-      const families = this.data.families
-      for (const family of families) {
-        await api.updateMemberInfo(family._id, editNickname.trim(), null)
-      }
+      // 调用 updateUserInfo 同步更新 users 集合和所有家庭中的成员信息
+      await wx.cloud.callFunction({
+        name: 'login',
+        data: {
+          action: 'updateUserInfo',
+          nickName: editNickname.trim()
+        }
+      })
 
       // 更新全局用户信息
       getApp().globalData.userInfo.nickName = editNickname.trim()
