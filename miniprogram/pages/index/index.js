@@ -4,7 +4,10 @@ const util = require('../../utils/util.js')
 
 Page({
   data: {
-    babies: []
+    babies: [],
+    canAddBaby: false, // 是否可以添加宝宝
+    babiesInGuardianFamilies: 0, // 用户作为一级助教的家庭中的宝宝数量
+    maxBabies: 3 // 每个家庭最多宝宝数
   },
 
   onShow() {
@@ -56,7 +59,8 @@ Page({
       
       this.setData({
         babies: formattedBabies,
-        families: families
+        families: families,
+        ...this.calculateCanAddBaby(formattedBabies, families)
       })
     } catch (error) {
       console.error('加载宝宝信息失败', error)
@@ -64,6 +68,34 @@ Page({
         title: '加载失败，请重试',
         icon: 'none'
       })
+    }
+  },
+
+  /**
+   * 计算用户是否可以添加宝宝
+   */
+  calculateCanAddBaby(babies, families) {
+    const userOpenid = getApp().globalData.userInfo.openid
+    
+    // 找出用户是一级助教的家庭
+    const guardianFamilies = families.filter(f => {
+      const member = f.members.find(m => m.openid === userOpenid)
+      return member && member.permission === 'guardian'
+    })
+    
+    if (guardianFamilies.length === 0) {
+      return { canAddBaby: false, babiesInGuardianFamilies: 0 }
+    }
+    
+    // 计算这些家庭中的宝宝总数
+    const guardianFamilyIds = guardianFamilies.map(f => f._id)
+    const babiesCount = babies.filter(baby => 
+      guardianFamilyIds.includes(baby.familyId)
+    ).length
+    
+    return {
+      canAddBaby: babiesCount < this.data.maxBabies,
+      babiesInGuardianFamilies: babiesCount
     }
   },
 
@@ -78,23 +110,41 @@ Page({
         })
         return
       }
-      
-      const hasPermission = await api.checkPermission(null, 'guardian')
-      if (!hasPermission) {
+        
+      // 检查用户是否是某个家庭的一级助教
+      const userOpenid = getApp().globalData.userInfo.openid
+      const isGuardian = families.some(f => {
+        const member = f.members.find(m => m.openid === userOpenid)
+        return member && member.permission === 'guardian'
+      })
+        
+      if (!isGuardian) {
         wx.showToast({
           title: '只有一级助教才可以添加宝宝',
           icon: 'none'
         })
         return
       }
-      
-      if (this.data.babies.length >= 3) {
+        
+      // 检查该用户作为一级助教的家庭是否已经有 3 个宝宝
+      const guardianFamilies = families.filter(f => {
+        const member = f.members.find(m => m.openid === userOpenid)
+        return member && member.permission === 'guardian'
+      })
+        
+      const guardianFamilyIds = guardianFamilies.map(f => f._id)
+      const babiesInGuardianFamilies = this.data.babies.filter(baby => 
+        guardianFamilyIds.includes(baby.familyId)
+      )
+        
+      if (babiesInGuardianFamilies.length >= 3) {
         wx.showToast({
-          title: '最多只能添加3个宝宝',
+          title: '您的家庭最多只能添加 3 个宝宝',
           icon: 'none'
         })
         return
       }
+        
       wx.navigateTo({
         url: '/pages/baby-add/baby-add'
       })

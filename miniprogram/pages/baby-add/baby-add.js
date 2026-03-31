@@ -14,32 +14,42 @@ Page({
       birthWeight: ''
     },
     familyOptions: [],
-    currentDate: util.formatTime(new Date()).replace(/\//g, '-')
+    currentDate: util.formatTime(new Date()).replace(/\//g, '-'),
+    isSubmitting: false // 防止重复提交
   },
 
   async onLoad() {
-    // 检查权限
-    const hasPermission = await api.checkPermission(null, 'guardian')
-    if (!hasPermission) {
-      wx.showToast({ title: '只有一级助教才能添加宝宝', icon: 'none' })
-      setTimeout(() => wx.navigateBack(), 1500)
-      return
-    }
-    this.loadFamilies()
+    // 检查权限并加载家庭列表
+    await this.checkAddBabyPermission()
   },
 
-  async loadFamilies() {
+  async checkAddBabyPermission() {
     try {
       const families = await api.getFamilies()
-      const familyOptions = families.map(f => ({
+      
+      // 筛选出用户是一级助教 (guardian) 的家庭
+      const guardianFamilies = families.filter(f => {
+        const member = f.members.find(m => m.openid === getApp().globalData.userInfo.openid)
+        return member && member.permission === 'guardian'
+      })
+      
+      if (guardianFamilies.length === 0) {
+        wx.showToast({ title: '只有一级助教才能添加宝宝', icon: 'none' })
+        setTimeout(() => wx.navigateBack(), 1500)
+        return
+      }
+      
+      // 只显示用户是一级助教的家庭
+      const familyOptions = guardianFamilies.map(f => ({
         _id: f._id,
         name: f.name
       }))
-      this.setData({
-        familyOptions
-      })
+      
+      this.setData({ familyOptions })
     } catch (error) {
-      console.error('加载家庭列表失败', error)
+      console.error('检查权限失败', error)
+      wx.showToast({ title: '加载失败', icon: 'none' })
+      setTimeout(() => wx.navigateBack(), 1500)
     }
   },
 
@@ -72,6 +82,11 @@ Page({
   },
 
   async submitForm() {
+    // 防止重复提交
+    if (this.data.isSubmitting) {
+      return
+    }
+    
     const { familyId, name, gender, birthDate, birthHeight, birthWeight } = this.data.formData
 
     if (!familyId) {
@@ -91,6 +106,8 @@ Page({
     }
 
     try {
+      this.setData({ isSubmitting: true })
+      
       await api.addBaby({
         familyId: familyId,
         name: name.trim(),
@@ -114,6 +131,8 @@ Page({
         title: e.message || '添加失败',
         icon: 'none'
       })
+    } finally {
+      this.setData({ isSubmitting: false })
     }
   }
 })
