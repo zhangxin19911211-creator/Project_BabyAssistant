@@ -31,18 +31,39 @@
   <!-- 家庭列表 -->
   <view class="families-section">
     <view wx:if="{{families.length === 0}}" class="empty-state">
-      <image class="empty-icon" src="../../images/Family.png"></image>
-      <text class="empty-title">暂无家庭</text>
-      <text class="empty-subtitle">创建或加入家庭，与家人一起关注宝宝成长</text>
-      <view class="empty-buttons">
-        <button class="empty-btn" bindtap="openCreateModal">新建家庭</button>
-        <button class="empty-btn join-btn" bindtap="openJoinModal">加入家庭</button>
+      <!-- 装饰性背景元素 -->
+      <view class="empty-bg-decoration bg-1"></view>
+      <view class="empty-bg-decoration bg-2"></view>
+      <view class="empty-bg-decoration bg-3"></view>
+      
+      <!-- 图标区域 -->
+      <view class="empty-icon-container">
+        <view class="icon-bg-circle"></view>
+        <image class="empty-icon" src="../../images/family-empty.svg" mode="aspectFit"></image>
+      </view>
+      
+      <!-- 文字区域 -->
+      <view class="empty-text-area">
+        <text class="empty-main-title">暂无家庭</text>
+        <text class="empty-desc">创建或加入家庭，与家人一起关注宝宝成长</text>
+      </view>
+      
+      <!-- 按钮区域 -->
+      <view class="empty-action-btns">
+        <button class="action-btn create-family-btn" bindtap="openCreateModal">
+          <text class="btn-icon">+</text>
+          <text class="btn-label">新建家庭</text>
+        </button>
+        <button class="action-btn join-family-btn" bindtap="openJoinModal">
+          <text class="btn-icon">→</text>
+          <text class="btn-label">加入家庭</text>
+        </button>
       </view>
     </view>
     
     <view wx:else class="families-list">
-      <view class="family-card color-{{item.colorIndex || index % 3}}" wx:for="{{families}}" wx:key="_id">
-        <view class="family-header color-{{item.colorIndex || index % 3}}">
+      <view class="family-card color-{{item.colorIndex}}" wx:for="{{families}}" wx:key="_id">
+        <view class="family-header color-{{item.colorIndex}}">
           <view class="family-info">
             <text class="family-name">我的家庭：{{item.name}}</text>
             <text class="family-member-count">{{item.members.length}} 位成员</text>

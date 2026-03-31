@@ -1,8 +1,5 @@
 <!--pages/baby-add/baby-add.wxml-->
 <view class="container">
-  <view class="page-title">添加宝宝</view>
-  <view class="page-subtitle">记录宝宝成长的起点</view>
-  
   <view class="form-container">
     <view class="form-item">
       <text class="label">所属家庭</text>

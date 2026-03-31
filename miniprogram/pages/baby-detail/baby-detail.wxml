@@ -96,4 +96,29 @@
       </view>
     </block>
   </view>
+
+  <!-- 修改宝宝姓名弹窗 -->
+  <view wx:if="{{showEditNameModal}}" class="modal-overlay" bindtap="closeEditNameModal">
+    <view class="modal-content join-modal" catchtap="noop">
+      <view class="join-modal-header">
+        <text class="modal-title">修改宝宝姓名</text>
+        <text class="modal-subtitle">修改宝宝的显示名称</text>
+      </view>
+      <view class="join-form">
+        <view class="input-container">
+          <text class="input-label">宝宝姓名</text>
+          <input class="invite-code-input" placeholder="请输入宝宝姓名" value="{{editBabyName}}" bindinput="onEditBabyNameInput" maxlength="7" />
+          <text class="input-hint">宝宝姓名最多7个字符</text>
+        </view>
+        <view class="form-actions">
+          <button class="join-submit-btn" bindtap="submitEditNameForm">
+            <text class="btn-text">保存</text>
+          </button>
+          <button class="cancel-btn" bindtap="closeEditNameModal">
+            <text class="btn-text">取消</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
 </view>

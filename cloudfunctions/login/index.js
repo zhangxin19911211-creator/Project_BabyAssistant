@@ -57,30 +57,6 @@ exports.main = async (event, context) => {
         return new Date(b.createTime) - new Date(a.createTime)
       })
       
-      // 确保每个家庭都有 colorIndex（为旧数据补充）
-      const usedColors = sortedFamilies.filter(f => f.colorIndex !== undefined).map(f => f.colorIndex)
-      for (const family of sortedFamilies) {
-        if (family.colorIndex === undefined) {
-          // 找到一个未使用的颜色
-          let newColorIndex = 0
-          while (usedColors.includes(newColorIndex)) {
-            newColorIndex = (newColorIndex + 1) % 3
-            if (usedColors.length >= 3) break
-          }
-          family.colorIndex = newColorIndex
-          usedColors.push(newColorIndex)
-          
-          // 更新数据库中的 colorIndex
-          try {
-            await db.collection('families').doc(family._id).update({
-              data: { colorIndex: newColorIndex }
-            })
-          } catch (updateError) {
-            console.warn('更新家庭颜色索引失败', updateError)
-          }
-        }
-      }
-      
       return { success: true, families: sortedFamilies }
     }
     
@@ -156,14 +132,6 @@ exports.main = async (event, context) => {
         throw new Error('最多只能加入3个家庭')
       }
       
-      // 计算新的颜色索引，不占用已有颜色（支持 3 种配色方案）
-      const usedColors = joinedFamilies.data.map(f => f.colorIndex || 0)
-      let newColorIndex = 0
-      while (usedColors.includes(newColorIndex)) {
-        newColorIndex = (newColorIndex + 1) % 3
-        if (usedColors.length >= 3) break // 如果所有颜色都已使用，则循环使用
-      }
-      
       // 创建新家庭
       const newFamily = {
         name: familyName,
@@ -175,7 +143,6 @@ exports.main = async (event, context) => {
           permission: 'guardian',
           joinTime: new Date()
         }],
-        colorIndex: newColorIndex,
         createTime: new Date()
       }
       

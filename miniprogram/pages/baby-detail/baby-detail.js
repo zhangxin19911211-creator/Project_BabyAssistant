@@ -165,8 +165,9 @@ Page({
     ecWeight: {
       lazyLoad: true
     },
-    // 添加标准数据缓存
-    cachedStandardData: {}
+    cachedStandardData: {},
+    showEditNameModal: false,
+    editBabyName: ''
   },
 
   onLoad(options) {
@@ -498,52 +499,64 @@ Page({
         return
       }
       
-      wx.showModal({
-        title: '修改宝宝姓名',
-        content: '请输入新的宝宝姓名（最多7个字符）',
-        editable: true,
-        placeholderText: this.data.baby.name,
-        success: async (res) => {
-          if (res.confirm && res.content) {
-            const newName = res.content.trim()
-            if (newName.length === 0) {
-              wx.showToast({
-                title: '姓名不能为空',
-                icon: 'none'
-              })
-              return
-            }
-            if (newName.length > 7) {
-              wx.showToast({
-                title: '姓名最多7个字符',
-                icon: 'none'
-              })
-              return
-            }
-            
-            try {
-              await api.updateBabyName(this.data.babyId, newName)
-              this.setData({
-                'baby.name': newName
-              })
-              wx.showToast({
-                title: '修改成功',
-                icon: 'success'
-              })
-            } catch (error) {
-              console.error('修改宝宝姓名失败', error)
-              wx.showToast({
-                title: error.message || '修改失败',
-                icon: 'none'
-              })
-            }
-          }
-        }
+      this.setData({
+        showEditNameModal: true,
+        editBabyName: this.data.baby.name
       })
     } catch (error) {
       console.error('检查权限失败', error)
       wx.showToast({
         title: '检查权限失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  onEditBabyNameInput(e) {
+    this.setData({
+      editBabyName: e.detail.value
+    })
+  },
+
+  closeEditNameModal() {
+    this.setData({
+      showEditNameModal: false
+    })
+  },
+
+  noop() {},
+
+  async submitEditNameForm() {
+    const newName = this.data.editBabyName.trim()
+    if (newName.length === 0) {
+      wx.showToast({
+        title: '姓名不能为空',
+        icon: 'none'
+      })
+      return
+    }
+    if (newName.length > 7) {
+      wx.showToast({
+        title: '姓名最多7个字符',
+        icon: 'none'
+      })
+      return
+    }
+    
+    try {
+      await api.updateBabyName(this.data.babyId, newName)
+      this.setData({
+        'baby.name': newName,
+        showEditNameModal: false
+      })
+      wx.showToast({
+        title: '修改成功',
+        icon: 'success'
+      })
+    } catch (error) {
+      console.error('修改宝宝姓名失败', error)
+      wx.showToast({
+        title: error.message || '修改失败',
         icon: 'none'
       })
     }

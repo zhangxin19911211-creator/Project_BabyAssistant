@@ -1,5 +1,6 @@
 // pages/family/family.js
 const api = require('../../utils/api.js')
+const { getColorIndexById } = require('../../utils/util.js')
 const db = wx.cloud.database()
 const _ = db.command
 
@@ -93,7 +94,7 @@ Page({
           }
         }
 
-        // 遍历所有家庭，获取用户在各家庭中的身份，并为每个家庭添加当前用户的权限
+        // 遍历所有家庭，获取用户在各家庭中的身份，并为每个家庭添加当前用户的权限和颜色索引
         families.forEach(family => {
           // 更新家庭成员信息，从users集合获取最新数据
           family.members = family.members.map(member => {
@@ -118,6 +119,9 @@ Page({
             // 为家庭对象添加当前用户的权限
             family.currentUserPermission = member.permission
           }
+          
+          // 基于家庭ID计算颜色索引（无需数据库存储）
+          family.colorIndex = getColorIndexById(family._id)
         })
       }
 

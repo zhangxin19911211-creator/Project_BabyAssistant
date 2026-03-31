@@ -67,11 +67,32 @@ const formatAgeString = ({ years, months, days }) => {
   return str
 }
 
+/**
+ * 基于ID字符串计算固定的颜色索引（0-2）
+ * 使用简单的哈希算法确保同一ID始终得到相同颜色
+ * @param {string} id - 家庭ID或其他唯一标识
+ * @returns {number} - 颜色索引 0/1/2
+ */
+const getColorIndexById = (id) => {
+  if (!id || typeof id !== 'string') return 0
+  
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    const char = id.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // 转换为32位整数
+  }
+  
+  // 取绝对值后模3，确保结果在 0-2 之间
+  return Math.abs(hash) % 3
+}
+
 module.exports = {
   formatTime,
   calculateAge,
   calculateAgeInMonths,
   formatAgeString,
   debounce,
-  throttle
+  throttle,
+  getColorIndexById
 }

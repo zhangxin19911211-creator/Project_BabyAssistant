@@ -14,7 +14,7 @@
 
   <view class="list-area">
     <view class="empty-state" wx:if="{{babies.length === 0}}">
-      <text class="emoji">👶</text>
+      <image class="empty-icon" src="../../images/baby-empty.svg" mode="aspectFit"></image>
       <text class="empty-text">还没有宝宝信息</text>
       <text class="empty-subtext">点击"添加宝宝"开始记录成长</text>
       <button class="add-first-btn" bindtap="goToAddBaby">🍼 添加宝宝</button>

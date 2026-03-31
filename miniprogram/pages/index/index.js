@@ -1,6 +1,7 @@
 // pages/index/index.js
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
+const { getColorIndexById } = require('../../utils/util.js')
 
 Page({
   data: {
@@ -30,12 +31,11 @@ Page({
       const familyMap = {}
       const familyColorMap = {}
       
-      // 为每个家庭分配固定颜色（使用数据库存储的 colorIndex 字段）
-      families.forEach(function(f, index) {
+      // 为每个家庭分配固定颜色（基于家庭ID哈希计算，无需数据库存储）
+      families.forEach(function(f) {
         familyMap[f._id] = f.name
-        // 直接使用数据库中的 colorIndex，确保与家庭卡片颜色一致
-        const colorIndex = f.colorIndex !== undefined ? f.colorIndex : (index % 3)
-        familyColorMap[f._id] = colorIndex
+        // 使用ID哈希计算颜色索引，确保同一家庭始终显示相同颜色
+        familyColorMap[f._id] = getColorIndexById(f._id)
       })
       
       // 批量获取所有宝宝的最新记录（并行请求）
@@ -47,7 +47,7 @@ Page({
       const formattedBabies = babiesData.map((baby, index) => {
         const ageObj = util.calculateAge(baby.birthDate)
         const ageStr = util.formatAgeString(ageObj)
-        const familyColorIndex = familyColorMap[baby.familyId] || 0
+        const familyColorIndex = familyColorMap[baby.familyId] !== undefined ? familyColorMap[baby.familyId] : getColorIndexById(baby.familyId)
         
         return Object.assign({}, baby, {
           ageStr: ageStr,

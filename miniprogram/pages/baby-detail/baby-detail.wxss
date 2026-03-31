@@ -101,9 +101,13 @@ page {
 .name {
   font-size: 44rpx;
   font-weight: bold;
-  color: var(--baby-text);
+  background: linear-gradient(90deg, var(--baby-primary), var(--baby-primary-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 12rpx;
-  letter-spacing: 2rpx;
+  letter-spacing: 6rpx;
+  font-family: '站酷庆科黄油体', 'ZCOOL QingKe HuangYou', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 .age {
@@ -441,4 +445,201 @@ ec-canvas {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.5) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(10rpx);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, var(--baby-card) 0%, var(--baby-primary-light) 100%);
+  border-radius: 32rpx;
+  padding: 40rpx;
+  width: 85%;
+  max-width: 500rpx;
+  box-shadow: 0 24rpx 64rpx var(--baby-shadow);
+  animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3rpx solid rgba(127, 209, 185, 0.3);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background: linear-gradient(90deg, var(--cmbyn-color-1), var(--cmbyn-color-4), var(--cat-color-2), var(--cat-color-3), var(--cat-color-5));
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-80rpx) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.join-modal {
+  padding: 48rpx 40rpx;
+  width: 85%;
+  max-width: 580rpx;
+  animation: modalFadeIn 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.join-modal-header {
+  margin-bottom: 48rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  padding-bottom: 32rpx;
+  border-bottom: 2rpx solid var(--baby-primary-light);
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--baby-text);
+  text-align: center;
+  letter-spacing: 2rpx;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 28rpx;
+  color: #616161;
+  line-height: 1.6;
+}
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 36rpx;
+  margin-bottom: 32rpx;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.input-label {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--baby-text);
+  letter-spacing: 1rpx;
+  padding: 0 8rpx;
+}
+
+.invite-code-input {
+  border: 3rpx solid rgba(127, 209, 185, 0.3);
+  border-radius: 28rpx;
+  padding: 36rpx;
+  font-size: 32rpx;
+  box-shadow: inset 0 4rpx 12rpx rgba(127, 209, 185, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, var(--baby-card) 0%, var(--baby-primary-light) 100%);
+  font-weight: 600;
+  color: var(--baby-text);
+}
+
+.invite-code-input:focus {
+  border-color: var(--baby-primary);
+  box-shadow: inset 0 4rpx 12rpx rgba(127, 209, 185, 0.15), 0 0 0 6rpx rgba(127, 209, 185, 0.15);
+  transform: translateY(-3rpx);
+  background: var(--baby-card);
+}
+
+.input-hint {
+  font-size: 24rpx;
+  color: var(--baby-text-secondary);
+  margin-top: 8rpx;
+  line-height: 1.6;
+  padding: 0 8rpx;
+}
+
+.form-actions {
+  display: flex;
+  gap: 20rpx;
+  width: 100%;
+}
+
+.join-submit-btn {
+  background: linear-gradient(135deg, var(--baby-coral) 0%, #FF9A8B 100%);
+  color: var(--baby-card);
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  padding: 24rpx;
+  line-height: normal;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6rpx 20rpx rgba(255, 182, 163, 0.4);
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  letter-spacing: 1rpx;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.join-submit-btn:active {
+  transform: translateY(-2rpx) scale(0.98);
+  box-shadow: 0 8rpx 20rpx rgba(255, 182, 163, 0.6);
+}
+
+.join-submit-btn .btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.cancel-btn {
+  background: linear-gradient(135deg, var(--baby-card) 0%, #F5F5F5 100%);
+  color: var(--baby-text-secondary);
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  padding: 24rpx;
+  line-height: normal;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  border: 2rpx solid rgba(127, 209, 185, 0.3);
+  letter-spacing: 1rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  margin: 0;
+}
+
+.cancel-btn:active {
+  background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.btn-text {
+  font-size: 26rpx;
+  font-weight: 600;
 }
