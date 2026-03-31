@@ -15,8 +15,7 @@
 - [miniprogram/utils/util.js](file://miniprogram/utils/util.js)
 - [miniprogram/pages/baby-add/baby-add.js](file://miniprogram/pages/baby-add/baby-add.js)
 - [miniprogram/pages/record-add/record-add.js](file://miniprogram/pages/record-add/record-add.js)
-- [miniprogram/components/cloudTipModal/index.js](file://miniprogram/components/cloudTipModal/index.js)
-- [miniprogram/components/cloudTipModal/index.wxss](file://miniprogram/components/cloudTipModal/index.wxss)
+
 </cite>
 
 ## 目录
@@ -41,6 +40,15 @@
 - **家庭分组功能**：支持多家庭管理和颜色标识
 - **响应式交互**：流畅的动画和过渡效果
 
+### v2.2.0 UI升级亮点
+- **宝宝卡片背景**：多层渐变叠加设计
+  - 左上角珊瑚色椭圆渐变 (rgba(255, 182, 163, 0.15))
+  - 右下角薄荷绿椭圆渐变 (rgba(127, 209, 185, 0.12))
+  - 中上淡黄色圆形渐变 (rgba(255, 218, 185, 0.1))
+  - 底层145度多段线性渐变
+- **宝宝姓名字体**：站酷庆科黄油体，深珊瑚色 #5A4A42
+- **顶部装饰线**：彩虹渐变 (珊瑚→薄荷→淡黄→珊瑚)
+
 ## 项目结构
 
 项目采用典型的微信小程序目录结构，主要分为以下几个核心部分：
@@ -60,7 +68,6 @@ M[record-add.js] --> N[记录页]
 end
 subgraph "组件层"
 O[ec-canvas] --> P[图表组件]
-Q[cloudTipModal] --> R[提示模态框]
 end
 subgraph "工具层"
 S[api.js] --> T[API封装]
