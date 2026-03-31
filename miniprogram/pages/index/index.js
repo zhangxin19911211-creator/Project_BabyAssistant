@@ -1,4 +1,4 @@
-// pages/index/index.js
+﻿// pages/index/index.js
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
@@ -75,7 +75,13 @@ Page({
    * 计算用户是否可以添加宝宝
    */
   calculateCanAddBaby(babies, families) {
-    const userOpenid = getApp().globalData.userInfo.openid
+    // 安全检查：确保用户已登录
+    const app = getApp()
+    if (!app.globalData || !app.globalData.userInfo || !app.globalData.userInfo.openid) {
+      return { canAddBaby: false, babiesInGuardianFamilies: 0 }
+    }
+    
+    const userOpenid = app.globalData.userInfo.openid
     
     // 找出用户是一级助教的家庭
     const guardianFamilies = families.filter(f => {
@@ -94,7 +100,7 @@ Page({
     ).length
     
     return {
-      canAddBaby: babiesCount < this.data.maxBabies,
+      canAddBaby: babiesCount < 3,
       babiesInGuardianFamilies: babiesCount
     }
   },
