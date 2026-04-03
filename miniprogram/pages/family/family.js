@@ -1,8 +1,39 @@
 // pages/family/family.js
 const api = require('../../utils/api.js')
+const safeLog = require('../../utils/safeLog.js')
 const { getColorIndexById } = require('../../utils/util.js')
 const db = wx.cloud.database()
 const _ = db.command
+
+/** 与成员列表展示一致：非 guardian/caretaker 均按围观处理，避免 permission 缺失时邀请页为空 */
+function normalizeMemberPermission(p) {
+  const v = String(p == null ? '' : p).trim().toLowerCase()
+  if (v === 'guardian') return 'guardian'
+  if (v === 'caretaker') return 'caretaker'
+  if (v === 'viewer') return 'viewer'
+  return 'viewer'
+}
+
+const INVITE_ROLE_META = {
+  guardian: {
+    type: 'guardian',
+    title: '一级助教',
+    desc: '最高权限，可管理宝宝和成员',
+    cardClass: 'guardian-card'
+  },
+  caretaker: {
+    type: 'caretaker',
+    title: '二级助教',
+    desc: '可添加宝宝成长记录',
+    cardClass: 'caretaker-card'
+  },
+  viewer: {
+    type: 'viewer',
+    title: '围观吃瓜',
+    desc: '仅可查看宝宝成长数据',
+    cardClass: 'viewer-card'
+  }
+}
 
 Page({
   data: {
@@ -16,6 +47,8 @@ Page({
     showEditNameModal: false,
     showEditNicknameModal: false,
     showFeedbackModal: false,
+    showCreatorLeaveModal: false,
+    showDissolveConfirmModal: false,
     familyName: '',
     inviteCode: '',
     currentInviteCode: '',
@@ -26,25 +59,40 @@ Page({
     editNickname: '',
     editNicknameMember: null,
     feedbackContent: '',
-    feedbackImages: []
+    feedbackImages: [],
+    leavingFamilyId: null,
+    hasOtherGuardians: false,
+    inviteableRoles: [],
+    /** 邀请弹窗用 wx:for 渲染，避免单角色时 button+wx:if 在真机不显示 */
+    inviteRoleOptions: []
   },
 
   onShow() {
     this.loadFamilyInfo()
+    this.getTabBar().setData({
+      selected: 2
+    })
   },
 
   async loadFamilyInfo() {
     try {
-      // 清除家庭列表缓存，确保获取最新数据
-      api.clearCache('cache_families')
       const families = await api.getFamilies()
+      
+      // 检查全局用户信息是否存在
+      const app = getApp()
+      if (!app.globalData.userInfo) {
+        // 用户信息未加载，等待登录完成
+        safeLog.log('用户信息未加载，跳过加载家庭信息')
+        return
+      }
+      
       // 从 users 集合获取最新的用户信息（包括头像和用户名）
       const db = wx.cloud.database()
       const userResult = await db.collection('users').where({
-        openid: getApp().globalData.userInfo.openid
+        openid: app.globalData.userInfo.openid
       }).get()
       
-      let currentUser = getApp().globalData.userInfo
+      let currentUser = app.globalData.userInfo
       
       // 如果数据库中有用户信息，使用数据库中的数据
       if (userResult.data.length > 0) {
@@ -85,8 +133,11 @@ Page({
       // 构建用户在各家庭中的身份列表，并更新家庭成员信息
       const userFamilyRoles = []
       if (families.length > 0) {
+        // 保存当前用户的openid，确保后续使用
+        const currentUserOpenid = currentUser.openid
+        
         const firstFamily = families[0]
-        const userInFamily = firstFamily.members.find(member => member.openid === currentUser.openid)
+        const userInFamily = firstFamily.members.find(member => member.openid === currentUserOpenid)
         if (userInFamily) {
           currentUser = {
             ...currentUser,
@@ -106,7 +157,7 @@ Page({
             }
           })
 
-          const member = family.members.find(m => m.openid === currentUser.openid)
+          const member = family.members.find(m => m.openid === currentUserOpenid)
           if (member) {
             const permissionText = member.permission === 'guardian' ? '一级助教' : 
                                   member.permission === 'caretaker' ? '二级助教' : '围观吃瓜'
@@ -195,41 +246,151 @@ Page({
     
     const isCreator = family.creatorOpenid === this.data.currentUser.openid
     
-    const confirmContent = isCreator 
-      ? '您是家庭创建者，退出家庭将清除所有宝宝数据，确定要退出吗？' 
-      : '确定要退出该家庭吗？'
-    
-    wx.showModal({
-      title: '确认退出',
-      content: confirmContent,
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            await api.leaveFamily(familyId)
-            wx.showToast({
-              title: '退出成功',
-              icon: 'success',
-              success: () => {
-                this.loadFamilyInfo()
-              }
-            })
-          } catch (error) {
-            console.error('退出家庭失败', error)
-            wx.showToast({
-              title: error.message || '退出失败，请重试',
-              icon: 'none'
-            })
+    if (isCreator) {
+      // 掌门人退出：检查是否有其他一级助理
+      const otherGuardians = family.members.filter(
+        m => m.openid !== this.data.currentUser.openid && m.permission === 'guardian'
+      )
+      
+      // 掌门人退出：显示自定义弹窗
+      this.setData({
+        showCreatorLeaveModal: true,
+        leavingFamilyId: familyId,
+        hasOtherGuardians: otherGuardians.length > 0
+      })
+    } else {
+      // 非掌门人：普通退出确认
+      wx.showModal({
+        title: '确认退出',
+        content: '确定要退出该家庭吗？',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              await api.leaveFamily(familyId)
+              wx.showToast({
+                title: '退出成功',
+                icon: 'success',
+                success: () => {
+                  this.loadFamilyInfo()
+                }
+              })
+            } catch (error) {
+              console.error('退出家庭失败', error)
+              wx.showToast({
+                title: error.message || '退出失败，请重试',
+                icon: 'none'
+              })
+            }
           }
         }
-      }
+      })
+    }
+  },
+
+  closeCreatorLeaveModal() {
+    this.setData({
+      showCreatorLeaveModal: false,
+      leavingFamilyId: null,
+      hasOtherGuardians: false
     })
+  },
+
+  async confirmLeaveFamily() {
+    // 点击"是"，退出家庭（转让掌门人）
+    const familyId = this.data.leavingFamilyId
+    try {
+      await api.leaveFamily(familyId)
+      this.setData({
+        showCreatorLeaveModal: false,
+        leavingFamilyId: null
+      })
+      wx.showToast({
+        title: '退出成功',
+        icon: 'success',
+        success: () => {
+          this.loadFamilyInfo()
+        }
+      })
+    } catch (error) {
+      console.error('退出家庭失败', error)
+      wx.showToast({
+        title: error.message || '退出失败，请重试',
+        icon: 'none'
+      })
+    }
+  },
+
+  confirmDissolveFamily() {
+    // 点击"解散家庭"，显示确认弹窗
+    this.setData({
+      showCreatorLeaveModal: false,
+      showDissolveConfirmModal: true
+    })
+  },
+
+  closeDissolveConfirmModal() {
+    this.setData({
+      showDissolveConfirmModal: false,
+      leavingFamilyId: null
+    })
+  },
+
+  async executeDissolveFamily() {
+    // 确认解散家庭
+    const familyId = this.data.leavingFamilyId
+    try {
+      await api.dissolveFamily(familyId)
+      this.setData({
+        showDissolveConfirmModal: false,
+        leavingFamilyId: null
+      })
+      wx.showToast({
+        title: '家庭已解散',
+        icon: 'success',
+        success: () => {
+          this.loadFamilyInfo()
+        }
+      })
+    } catch (error) {
+      console.error('解散家庭失败', error)
+      wx.showToast({
+        title: error.message || '解散失败，请重试',
+        icon: 'none'
+      })
+    }
   },
 
   openInviteModal(e) {
     const familyId = e.currentTarget.dataset.familyId
+    const uid = (this.data.currentUser && this.data.currentUser.openid) || ''
+    const family = this.data.families.find(f => String(f._id) === String(familyId))
+    if (!family) {
+      wx.showToast({ title: '未找到家庭信息', icon: 'none' })
+      return
+    }
+    let userPermission = family.currentUserPermission
+    if (uid && (userPermission == null || userPermission === '')) {
+      const m = family.members.find(mem => mem.openid === uid)
+      userPermission = m ? m.permission : ''
+    }
+
+    const perm = normalizeMemberPermission(userPermission)
+    let inviteableRoles = []
+    if (perm === 'guardian') {
+      inviteableRoles = ['guardian', 'caretaker', 'viewer']
+    } else if (perm === 'caretaker') {
+      inviteableRoles = ['caretaker', 'viewer']
+    } else {
+      inviteableRoles = ['viewer']
+    }
+
+    const inviteRoleOptions = inviteableRoles.map((key) => INVITE_ROLE_META[key])
+
     this.setData({
       showInviteModal: true,
-      selectedFamily: familyId
+      selectedFamily: familyId,
+      inviteableRoles,
+      inviteRoleOptions
     })
   },
 
@@ -290,7 +451,8 @@ Page({
   closeInviteModal() {
     this.setData({
       showInviteModal: false,
-      selectedFamily: null
+      selectedFamily: null,
+      inviteRoleOptions: []
     })
   },
 
@@ -349,7 +511,7 @@ Page({
     return {
       title: '邀请您加入家庭',
       path: '/pages/family/family?inviteCode=' + currentInviteCode,
-      imageUrl: '../../images/Family.png'
+      imageUrl: '../../images/baby-empty.svg'
     }
   },
 
@@ -680,61 +842,56 @@ Page({
     wx.showLoading({ title: '提交中...' })
 
     try {
-      // 上传图片到云存储
+      const maxBytes = 2 * 1024 * 1024
       const uploadedImages = []
       for (const image of feedbackImages) {
-        const cloudPath = 'feedback/' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.jpg'
+        const fileInfo = await wx.getFileInfo({ filePath: image })
+        if (fileInfo.size > maxBytes) {
+          wx.hideLoading()
+          wx.showToast({ title: '单张图片不超过2MB', icon: 'none' })
+          return
+        }
+        const cloudPath =
+          'feedback/' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.jpg'
         const uploadResult = await wx.cloud.uploadFile({
-          cloudPath: cloudPath,
+          cloudPath,
           filePath: image
         })
         uploadedImages.push(uploadResult.fileID)
       }
 
-      // 构造反馈数据
-      const feedbackData = {
-        content: feedbackContent.trim(),
-        images: uploadedImages,
-        openid: getApp().globalData.userInfo.openid,
-        createTime: new Date()
-      }
-
-      // 保存到数据库
-      const db = wx.cloud.database()
-      const result = await db.collection('feedback').add({
-        data: feedbackData
-      })
-
-      // 调用云函数发送邮件
-      try {
-        await wx.cloud.callFunction({
-          name: 'sendFeedbackEmail',
-          data: {
-            data: {
-              ...feedbackData,
-              _id: result._id
-            }
-          }
-        })
-        console.log('邮件发送请求已提交')
-      } catch (emailError) {
-        console.error('发送邮件失败', emailError)
-        // 邮件发送失败不影响反馈提交
-      }
+      const submit = await api.submitFeedback(feedbackContent.trim(), uploadedImages)
+      const emailOk = !!submit.emailOk
+      const emailTip = submit.emailMessage || ''
 
       wx.hideLoading()
-      wx.showToast({
-        title: '反馈提交成功',
-        icon: 'success',
-        success: () => {
-          this.closeFeedbackModal()
-        }
-      })
+      if (emailOk) {
+        wx.showToast({
+          title: '反馈提交成功',
+          icon: 'success',
+          success: () => {
+            this.closeFeedbackModal()
+          }
+        })
+      } else {
+        wx.showModal({
+          title: '反馈已保存',
+          content:
+            '您的反馈已记录，但邮件通知未成功（' +
+            (emailTip || '请检查云函数与环境变量配置') +
+            '）。如需紧急联系请通过其他渠道告知开发者。',
+          showCancel: false,
+          confirmText: '知道了',
+          success: () => {
+            this.closeFeedbackModal()
+          }
+        })
+      }
     } catch (error) {
       wx.hideLoading()
       console.error('提交反馈失败', error)
       wx.showToast({
-        title: '提交失败，请重试',
+        title: (error && error.message) || '提交失败，请重试',
         icon: 'none'
       })
     }

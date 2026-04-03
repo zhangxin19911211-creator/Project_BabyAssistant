@@ -1,8 +1,10 @@
 // app.js
+const safeLog = require('./utils/safeLog.js')
+
 App({
   globalData: {
     userInfo: null,
-    env: "cloud1-9g3zldm095d334f3"
+    env: "testenv-7ghpvleu16cc3c93"
   },
 
   onLaunch: function () {
@@ -14,7 +16,7 @@ App({
         traceUser: true,
       });
     }
-    
+
     // 检查登录状态
     this.checkLoginStatus();
   },
@@ -36,14 +38,18 @@ App({
             data: {
               code: res.code
             },
-            success: (res) => {
-              this.globalData.userInfo = res.result.userInfo;
-              // 存储到本地存储
-              wx.setStorageSync('openid', res.result.userInfo.openid);
-              console.log('登录成功', this.globalData.userInfo);
+            success: (cfRes) => {
+              const r = cfRes.result
+              if (r && r.success && r.userInfo && r.userInfo.openid) {
+                this.globalData.userInfo = r.userInfo
+                wx.setStorageSync('openid', r.userInfo.openid)
+                safeLog.log('登录成功', this.globalData.userInfo)
+              } else {
+                safeLog.error('登录云函数未返回有效用户信息', r)
+              }
             },
             fail: (err) => {
-              console.error('登录失败', err);
+              safeLog.error('登录失败', err)
             }
           });
         } else {

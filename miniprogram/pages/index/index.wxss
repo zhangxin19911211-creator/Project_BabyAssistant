@@ -343,7 +343,7 @@
   background-clip: text;
   letter-spacing: 4rpx;
   flex-shrink: 0;
-  font-family: '站酷庆科黄油体', 'ZCOOL QingKe HuangYou', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--app-font-family);
 }
 
 .gender {

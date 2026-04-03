@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/mood/mood",
     "pages/baby-add/baby-add",
     "pages/baby-detail/baby-detail",
     "pages/record-add/record-add",
@@ -14,26 +15,29 @@
     "navigationBarTextStyle": "white"
   },
   "tabBar": {
+    "custom": true,
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "宝宝",
-        "iconPath": "images/Baby.png",
-        "selectedIconPath": "images/Baby.png"
+        "text": "宝宝"
+      },
+      {
+        "pagePath": "pages/mood/mood",
+        "text": "心情"
       },
       {
         "pagePath": "pages/family/family",
-        "text": "家庭",
-        "iconPath": "images/Family.png",
-        "selectedIconPath": "images/Family.png"
+        "text": "家庭"
       }
-    ],
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
-    "selectedColor": "#81C784",
-    "color": "#666666"
+    ]
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
+    }
+  }
 }

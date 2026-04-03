@@ -107,7 +107,7 @@ page {
   background-clip: text;
   margin-bottom: 12rpx;
   letter-spacing: 6rpx;
-  font-family: '站酷庆科黄油体', 'ZCOOL QingKe HuangYou', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--app-font-family);
 }
 
 .age {

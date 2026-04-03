@@ -28,6 +28,32 @@ function compareVersion(v1, v2) {
   return 0
 }
 
+/** 替代已弃用的 wx.getSystemInfoSync().SDKVersion */
+function getSDKVersion() {
+  if (typeof wx.getAppBaseInfo === 'function') {
+    return wx.getAppBaseInfo().SDKVersion
+  }
+  return wx.getSystemInfoSync().SDKVersion
+}
+
+/** 替代已弃用的 wx.getSystemInfoSync().pixelRatio */
+function getPixelRatio() {
+  if (typeof wx.getWindowInfo === 'function') {
+    const win = wx.getWindowInfo()
+    if (win && win.pixelRatio != null) {
+      return win.pixelRatio
+    }
+  }
+  if (typeof wx.getDeviceInfo === 'function') {
+    const dev = wx.getDeviceInfo()
+    if (dev && dev.pixelRatio != null) {
+      return dev.pixelRatio
+    }
+  }
+  const legacy = wx.getSystemInfoSync()
+  return (legacy && legacy.pixelRatio != null) ? legacy.pixelRatio : 1
+}
+
 Component({
   properties: {
     canvasId: {
@@ -45,8 +71,24 @@ Component({
     }
   },
 
+  // 默认走 Canvas 2D，避免 lazyLoad 首帧渲染旧版 canvas 触发工具告警（created 里改 data 在新基础库未必参与首帧）
   data: {
-    isUseNewCanvas: false
+    isUseNewCanvas: true
+  },
+
+  lifetimes: {
+    attached() {
+      const force = this.properties.forceUseOldCanvas
+      let useNew = true
+      try {
+        useNew = compareVersion(getSDKVersion(), '2.9.0') >= 0 && !force
+      } catch (e) {
+        useNew = !force
+      }
+      if (this.data.isUseNewCanvas !== useNew) {
+        this.setData({ isUseNewCanvas: useNew })
+      }
+    }
   },
 
   ready: function () {
@@ -78,7 +120,7 @@ Component({
 
   methods: {
     init: function (callback) {
-      const version = wx.getSystemInfoSync().SDKVersion
+      const version = getSDKVersion()
 
       const canUseNewCanvas = compareVersion(version, '2.9.0') >= 0;
       const forceUseOldCanvas = this.data.forceUseOldCanvas;
@@ -150,7 +192,7 @@ Component({
           const canvasNode = res[0].node
           this.canvasNode = canvasNode
 
-          const canvasDpr = wx.getSystemInfoSync().pixelRatio
+          const canvasDpr = getPixelRatio()
           const canvasWidth = res[0].width
           const canvasHeight = res[0].height
 

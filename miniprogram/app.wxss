@@ -1,5 +1,8 @@
 /**app.wxss**/
+
 page {
+  --app-font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
   /* 基础配色 */
   --primary-color: #81C784;
   --primary-light: rgba(129, 199, 132, 0.2);
@@ -11,21 +14,21 @@ page {
   --white: #FFFFFF;
   --success: #32CD32;
   --danger: #E85C5C;
-  
+
   /* Call Me By Your Name 配色方案 */
   --cmbyn-color-1: #87CEEB;
   --cmbyn-color-2: #4682B4;
   --cmbyn-color-3: #FFDAB9;
   --cmbyn-color-4: #FFA07A;
   --cmbyn-color-5: #2E8B57;
-  
+
   /* Categorical Data 配色方案 */
   --cat-color-1: #5470C6;
   --cat-color-2: #91CC75;
   --cat-color-3: #FAC858;
   --cat-color-4: #EE6666;
   --cat-color-5: #73C0DE;
-  
+
   /* 优化后的色彩 */
   --baby-primary: #66C9A8;
   --baby-primary-light: #E0F5EF;
@@ -46,17 +49,36 @@ page {
   --baby-danger: #FF7B84;
   --baby-shadow: rgba(102, 209, 185, 0.2);
 
+  /* 家庭配色方案 */
+  --family-color-0-primary: var(--cmbyn-color-1);
+  --family-color-0-light: rgba(135, 206, 235, 0.1);
+  --family-color-0-dark: var(--cmbyn-color-2);
+
+  --family-color-1-primary: var(--cmbyn-color-3);
+  --family-color-1-light: rgba(255, 218, 185, 0.1);
+  --family-color-1-dark: var(--cmbyn-color-4);
+
+  --family-color-2-primary: var(--cmbyn-color-5);
+  --family-color-2-light: rgba(46, 139, 87, 0.1);
+  --family-color-2-dark: #228B22;
+
   background-color: var(--baby-bg);
-  font-family: 'Alibaba PuHuiTi', 'PingFang SC', 'Microsoft Yahei', sans-serif;
+  font-family: var(--app-font-family);
   font-size: 28rpx;
   color: var(--baby-text);
   box-sizing: border-box;
 }
 
-/* 使用系统字体 */
-
-page {
-  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+/* 部分原生组件不继承 page 字体，显式指定 */
+button,
+input,
+textarea,
+picker,
+radio,
+checkbox,
+label,
+navigator {
+  font-family: var(--app-font-family);
 }
 
 .container {
@@ -76,19 +98,4 @@ button:focus {
 
 button::after {
   border: none;
-}
-
-/* 家庭配色方案 */
-page {
-  --family-color-0-primary: var(--cmbyn-color-1);
-  --family-color-0-light: rgba(135, 206, 235, 0.1);
-  --family-color-0-dark: var(--cmbyn-color-2);
-  
-  --family-color-1-primary: var(--cmbyn-color-3);
-  --family-color-1-light: rgba(255, 218, 185, 0.1);
-  --family-color-1-dark: var(--cmbyn-color-4);
-  
-  --family-color-2-primary: var(--cmbyn-color-5);
-  --family-color-2-light: rgba(46, 139, 87, 0.1);
-  --family-color-2-dark: #228B22;
 }

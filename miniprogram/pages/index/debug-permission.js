@@ -9,34 +9,35 @@
  */
 
 const api = require('../../utils/api.js')
+const safeLog = require('../../utils/safeLog.js')
 
 async function debugPermission() {
   console.clear()
-  console.log('╔════════════════════════════════════════════╗')
-  console.log('║   权限调试工具                             ║')
-  console.log('╚════════════════════════════════════════════╝\n')
+  safeLog.log('╔════════════════════════════════════════════╗')
+  safeLog.log('║   权限调试工具                             ║')
+  safeLog.log('╚════════════════════════════════════════════╝\n')
   
   try {
     // 获取用户信息
     const app = getApp()
     const userOpenid = app.globalData.userInfo.openid
-    console.log('👤 用户 OpenID:', userOpenid, '\n')
+    safeLog.log('👤 用户标识:', { openid: userOpenid }, '\n')
     
     // 获取家庭列表
-    console.log('📊 获取家庭列表...')
+    safeLog.log('📊 获取家庭列表...')
     const families = await api.getFamilies()
-    console.log(`✅ 共 ${families.length} 个家庭\n`)
+    safeLog.log(`✅ 共 ${families.length} 个家庭\n`)
     
     // 分析每个家庭
-    console.log('🏠 家庭详情:')
+    safeLog.log('🏠 家庭详情:')
     families.forEach((family, index) => {
       const member = family.members.find(m => m.openid === userOpenid)
       const userRole = member ? (member.permission === 'guardian' ? '一级助教' : member.permission === 'caretaker' ? '二级助教' : '围观吃瓜') : '未加入'
       
-      console.log(`\n[${index + 1}] ${family.name}`)
-      console.log(`   您的身份：${userRole}`)
-      console.log(`   成员数：${family.members.length}`)
-      console.log(`   家庭 ID: ${family._id}`)
+      safeLog.log(`\n[${index + 1}] ${family.name}`)
+      safeLog.log(`   您的身份：${userRole}`)
+      safeLog.log(`   成员数：${family.members.length}`)
+      safeLog.log(`   家庭 ID: ${family._id}`)
     })
     
     // 找出用户是一级助教的家庭
@@ -45,13 +46,13 @@ async function debugPermission() {
       return member && member.permission === 'guardian'
     })
     
-    console.log('\n\n🎯 一级助教家庭:', guardianFamilies.map(f => f.name).join(', ') || '无')
-    console.log('   数量:', guardianFamilies.length)
+    safeLog.log('\n\n🎯 一级助教家庭:', guardianFamilies.map(f => f.name).join(', ') || '无')
+    safeLog.log('   数量:', guardianFamilies.length)
     
     // 获取宝宝列表
-    console.log('\n\n👶 获取宝宝列表...')
+    safeLog.log('\n\n👶 获取宝宝列表...')
     const babies = await api.getBabies()
-    console.log(`✅ 共 ${babies.length} 个宝宝\n`)
+    safeLog.log(`✅ 共 ${babies.length} 个宝宝\n`)
     
     // 分析每个宝宝的归属
     const guardianFamilyIds = guardianFamilies.map(f => f._id)
@@ -59,33 +60,33 @@ async function debugPermission() {
       guardianFamilyIds.includes(baby.familyId)
     )
     
-    console.log('📈 统计分析:')
-    console.log(`   所有宝宝总数：${babies.length}`)
-    console.log(`   一级助教家庭中的宝宝数：${babiesInGuardianFamilies.length}`)
-    console.log(`   可添加宝宝余额：${Math.max(0, 3 - babiesInGuardianFamilies.length)}`)
+    safeLog.log('📈 统计分析:')
+    safeLog.log(`   所有宝宝总数：${babies.length}`)
+    safeLog.log(`   一级助教家庭中的宝宝数：${babiesInGuardianFamilies.length}`)
+    safeLog.log(`   可添加宝宝余额：${Math.max(0, 3 - babiesInGuardianFamilies.length)}`)
     
     if (babiesInGuardianFamilies.length > 0) {
-      console.log('\n   一级助教家庭中的宝宝:')
+      safeLog.log('\n   一级助教家庭中的宝宝:')
       babiesInGuardianFamilies.forEach((baby, index) => {
         const familyName = families.find(f => f._id === baby.familyId)?.name || '未知'
-        console.log(`   [${index + 1}] ${baby.name} (${familyName})`)
+        safeLog.log(`   [${index + 1}] ${baby.name} (${familyName})`)
       })
     }
     
     // 最终判断
-    console.log('\n\n✅ 权限判断结果:')
+    safeLog.log('\n\n✅ 权限判断结果:')
     const canAddBaby = guardianFamilies.length > 0 && babiesInGuardianFamilies.length < 3
-    console.log(`   是否可以添加宝宝：${canAddBaby ? '✅ 是' : '❌ 否'}`)
+    safeLog.log(`   是否可以添加宝宝：${canAddBaby ? '✅ 是' : '❌ 否'}`)
     
     if (!canAddBaby) {
       if (guardianFamilies.length === 0) {
-        console.log('   ❌ 原因：您不是任何家庭的一级助教')
+        safeLog.log('   ❌ 原因：您不是任何家庭的一级助教')
       } else if (babiesInGuardianFamilies.length >= 3) {
-        console.log('   ❌ 原因：您的一级助教家庭中已有 3 个宝宝，已达上限')
+        safeLog.log('   ❌ 原因：您的一级助教家庭中已有 3 个宝宝，已达上限')
       }
     }
     
-    console.log('\n═══════════════════════════════════════════')
+    safeLog.log('\n═══════════════════════════════════════════')
     
     return {
       userOpenid,
@@ -97,7 +98,7 @@ async function debugPermission() {
     }
     
   } catch (error) {
-    console.error('❌ 调试失败:', error.message)
+    safeLog.error('❌ 调试失败:', error.message)
     throw error
   }
 }

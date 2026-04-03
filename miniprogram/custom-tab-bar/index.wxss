@@ -1,0 +1,63 @@
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100rpx;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1rpx solid #e5e5e5;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 999;
+}
+
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  margin-bottom: 4rpx;
+}
+
+/* 图标基础样式 */
+.tab-icon {
+  width: 48rpx;
+  height: 48rpx;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 未选中时保持默认大小 */
+.icon-normal {
+  transform: scale(1);
+}
+
+/* 选中后图标放大 */
+.icon-selected {
+  transform: scale(1.2);
+}
+
+.tab-text {
+  font-size: 22rpx;
+  transition: all 0.3s ease;
+}
+
+.text-normal {
+  color: #666666;
+}
+
+.text-selected {
+  color: #81C784;
+  font-weight: 600;
+}

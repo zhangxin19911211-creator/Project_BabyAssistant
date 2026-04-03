@@ -1,0 +1,302 @@
+<!-- pages/mood/mood.wxml -->
+<view class="mood-page">
+  <!-- 顶部与首页/家庭页一致的轻量标题区 -->
+  <view class="mood-hero" wx:if="{{babies.length > 0}}">
+    <view class="mood-hero-decoration"></view>
+    <text class="mood-hero-title">心情日历</text>
+    <text class="mood-hero-desc">点击右下角记录下你今天和宝宝在一起的心情吧</text>
+  </view>
+
+  <!-- 宝宝切换 -->
+  <view class="baby-switcher" wx:if="{{babies.length > 0}}">
+    <scroll-view scroll-x class="baby-scroll" show-scrollbar="false">
+      <view 
+        class="baby-item {{currentBabyId === item.babyId ? 'active' : ''}}" 
+        wx:for="{{babies}}" 
+        wx:key="babyId"
+        data-babyid="{{item.babyId}}"
+        bindtap="switchBaby"
+      >
+        <image class="baby-avatar" src="{{item.avatarUrl ? item.avatarUrl : '/images/Baby.png'}}" mode="aspectFill"/>
+        <text class="baby-name">{{item.babyName}}</text>
+      </view>
+    </scroll-view>
+    <view class="manage-fav-bar">
+      <text class="manage-fav-link" bindtap="openManageFavorites">添加或管理关注的宝宝</text>
+    </view>
+  </view>
+
+  <view class="empty-baby" wx:if="{{moodEmptyState === 'no_family' && !loading}}">
+    <image class="empty-icon" src="/images/mood-empty.svg"/>
+    <text class="empty-text">请先新建或加入家庭</text>
+  </view>
+
+  <view class="empty-baby" wx:if="{{moodEmptyState === 'no_babies' && !loading}}">
+    <image class="empty-icon" src="/images/mood-empty.svg"/>
+    <text class="empty-text">请先添加宝宝</text>
+  </view>
+
+  <view class="calendar-section card-surface" wx:if="{{currentBabyId}}">
+    <view class="month-header">
+      <view class="month-nav" bindtap="prevMonth">
+        <text class="nav-arrow">‹</text>
+      </view>
+      <text class="month-title">{{currentYear}}年{{currentMonth}}月</text>
+      <view class="month-nav" bindtap="nextMonth">
+        <text class="nav-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="week-header">
+      <text wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this" class="week-day">{{item}}</text>
+    </view>
+
+    <view class="calendar-grid">
+      <view 
+        class="calendar-cell {{item.isCurrentMonth ? '' : 'other-month'}} {{item.isToday ? 'today' : ''}} {{item.mood ? 'has-mood' : ''}}" 
+        wx:for="{{calendarDays}}" 
+        wx:key="date"
+        data-date="{{item.date}}"
+        bindtap="onDayTap"
+      >
+        <text class="day-number">{{item.day}}</text>
+        <view class="mood-indicator" wx:if="{{item.mood}}">
+          <text class="mood-emoji">{{item.mood.emoji}}</text>
+        </view>
+        <view class="mood-placeholder" wx:else></view>
+      </view>
+    </view>
+
+    <view class="mood-legend">
+      <view class="legend-item">
+        <text class="legend-emoji">😊</text>
+        <text class="legend-text">很乖</text>
+      </view>
+      <view class="legend-item">
+        <text class="legend-emoji">😐</text>
+        <text class="legend-text">普通</text>
+      </view>
+      <view class="legend-item">
+        <text class="legend-emoji">😫</text>
+        <text class="legend-text">闹腾</text>
+      </view>
+      <view class="legend-item">
+        <text class="legend-emoji">🤒</text>
+        <text class="legend-text">生病</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="activity-section card-surface" wx:if="{{currentBabyId}}">
+    <view class="section-header">
+      <text class="section-title">家庭动态</text>
+      <text class="section-more" bindtap="showActivityDetail">查看全部</text>
+    </view>
+    <swiper 
+      class="activity-swiper" 
+      vertical 
+      autoplay 
+      circular 
+      interval="4000" 
+      duration="500"
+      wx:if="{{activityLogs.length > 0}}"
+    >
+      <swiper-item wx:for="{{activityLogs}}" wx:key="_id">
+        <view class="activity-item">
+          <text class="activity-time">{{item.timeStr}}</text>
+          <text class="activity-content">{{item.description}}</text>
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="activity-empty" wx:else>
+      <text class="activity-empty-text">近 30 天暂无动态</text>
+    </view>
+  </view>
+
+  <view class="fab-button {{todayHasMood ? '' : 'fab-muted'}}" bindtap="openRatingModal" wx:if="{{currentBabyId}}">
+    <text class="fab-icon">+</text>
+  </view>
+</view>
+
+<!-- 底部抽屉：选择宝宝 -->
+<view class="drawer-overlay" wx:if="{{showBabySelector}}" bindtap="closeBabySelector">
+  <view class="drawer-sheet" catchtap="preventBubble">
+    <view class="drawer-grab"></view>
+    <view class="drawer-topline"></view>
+    <view class="drawer-head">
+      <text class="drawer-title">选择关注的宝宝</text>
+      <text class="drawer-sub">可多选，关注后在此记录心情</text>
+    </view>
+    <scroll-view scroll-y class="drawer-scroll drawer-scroll-tall" show-scrollbar="{{false}}">
+      <text class="selector-intro">请选择您要关注的宝宝：</text>
+      <view class="selector-baby-list">
+        <view 
+          class="selector-baby-item {{selectedBabySet[item._id] ? 'selected' : ''}}" 
+          wx:for="{{allBabies}}" 
+          wx:key="_id"
+          data-babyid="{{item._id}}"
+          bindtap="selectBaby"
+        >
+          <image class="selector-baby-avatar" src="{{item.avatarUrl ? item.avatarUrl : '/images/Baby.png'}}" mode="aspectFill"/>
+          <text class="selector-baby-name">{{item.name}}</text>
+          <view class="selector-check" wx:if="{{selectedBabySet[item._id]}}">✓</view>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="drawer-actions safe-bottom">
+      <button class="btn-drawer-primary" bindtap="confirmBabySelection" disabled="{{selectedBabyIds.length === 0}}">确定</button>
+    </view>
+  </view>
+</view>
+
+<!-- 底部抽屉：评价（主流程：日期 → 打分网格 → 备注 → 操作） -->
+<view class="drawer-overlay" wx:if="{{showRatingModal}}" bindtap="closeRatingModal">
+  <view class="drawer-sheet drawer-sheet-rating" catchtap="preventBubble">
+    <view class="drawer-grab"></view>
+    <view class="drawer-topline"></view>
+    <view class="drawer-head drawer-head-row">
+      <view class="drawer-head-text">
+        <text class="drawer-title">评价宝宝表现</text>
+        <text class="drawer-date" wx:if="{{ratingDate}}">{{ratingDate}}</text>
+      </view>
+      <text class="drawer-close" bindtap="closeRatingModal">×</text>
+    </view>
+    <scroll-view scroll-y class="drawer-scroll" show-scrollbar="{{false}}">
+      <!-- 已有评价提示 -->
+      <view class="existing-mood-hint" wx:if="{{existingMood}}">
+        <text class="hint-text">{{existingMood.creatorName}} 已对宝宝今天表现打分为 {{existingMood.emoji}}</text>
+      </view>
+
+      <view class="rating-section-label">今日表现</view>
+      <view class="rating-options">
+        <view 
+          class="rating-option {{selectedRating === item.value ? 'selected' : ''}}" 
+          wx:for="{{ratingOptions}}" 
+          wx:key="value"
+          data-value="{{item.value}}"
+          data-emoji="{{item.emoji}}"
+          bindtap="selectRating"
+        >
+          <text class="rating-emoji">{{item.emoji}}</text>
+          <text class="rating-label">{{item.label}}</text>
+        </view>
+      </view>
+
+      <view class="voice-section">
+        <text class="voice-section-label">备注（可选）</text>
+        <view class="voice-input-wrapper">
+          <textarea 
+            class="note-textarea {{voicePluginReady ? '' : 'note-textarea-full'}}" 
+            placeholder="输入文字，或使用麦克风语音输入"
+            value="{{moodNote}}"
+            bindinput="onNoteInput"
+            maxlength="200"
+          />
+          <view 
+            class="voice-button {{isRecording ? 'recording' : ''}}" 
+            wx:if="{{voicePluginReady}}"
+            catchtap="toggleRecording"
+          >
+            <view class="voice-mic-idle" wx:if="{{!isRecording}}">
+              <view class="vmic-body"></view>
+              <view class="vmic-stand"></view>
+            </view>
+            <view class="voice-mic-active" wx:else>
+              <view class="vbar"></view>
+              <view class="vbar"></view>
+              <view class="vbar"></view>
+            </view>
+          </view>
+        </view>
+        <text class="voice-static-hint" wx:if="{{!voicePluginReady}}">语音输入需接入「微信同声传译」插件；当前请手动输入。</text>
+        <text class="voice-hint" wx:if="{{voicePluginReady && isRecording}}">录音中 {{recordingTime}}s / 60s</text>
+      </view>
+    </scroll-view>
+    <view class="drawer-actions safe-bottom">
+      <button class="btn-drawer-secondary" bindtap="closeRatingModal">取消</button>
+      <button 
+        class="btn-drawer-primary {{canSubmit ? '' : 'disabled'}}" 
+        bindtap="submitRating"
+        disabled="{{!canSubmit}}"
+      >
+        提交
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- 底部抽屉：心情详情 -->
+<view class="drawer-overlay" wx:if="{{showDetailModal}}" bindtap="closeDetailModal">
+  <view class="drawer-sheet" catchtap="preventBubble">
+    <view class="drawer-grab"></view>
+    <view class="drawer-topline"></view>
+    <view class="drawer-head drawer-head-row">
+      <view class="drawer-head-text">
+        <text class="drawer-title">心情详情</text>
+        <text class="drawer-date" wx:if="{{detailDate}}">{{detailDate}}</text>
+      </view>
+      <text class="drawer-close" bindtap="closeDetailModal">×</text>
+    </view>
+    <scroll-view scroll-y class="drawer-scroll" show-scrollbar="{{false}}">
+      <view class="detail-content" wx:if="{{detailMood}}">
+        <view class="detail-mood">
+          <text class="detail-emoji">{{detailMood.emoji}}</text>
+          <text class="detail-rating">{{detailMood.ratingText}}</text>
+        </view>
+        <view class="detail-notes" wx:if="{{detailMood.noteEntriesList && detailMood.noteEntriesList.length}}">
+          <text class="note-label">备注记录</text>
+          <view class="note-entry" wx:for="{{detailMood.noteEntriesList}}" wx:key="_id">
+            <view class="note-header">
+              <text class="note-creator">{{item.creatorName || '用户'}}</text>
+              <view class="note-actions">
+                <text class="note-time" wx:if="{{item.createTime}}">{{item.createTimeStr || ''}}</text>
+                <text 
+                  class="note-delete" 
+                  wx:if="{{canDeleteMood && !item.isLegacy}}" 
+                  catchtap="deleteNoteEntry" 
+                  data-moodid="{{detailMood._id}}" 
+                  data-entryid="{{item._id}}"
+                >删除</text>
+              </view>
+            </view>
+            <text class="note-content">{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="detail-empty" wx:else>
+        <text>当天暂无心情记录</text>
+      </view>
+    </scroll-view>
+    <view class="drawer-actions safe-bottom" wx:if="{{detailMood && canDeleteMood}}">
+      <button class="btn-drawer-danger btn-block" bindtap="deleteMoodRecord">删除该日记录</button>
+    </view>
+  </view>
+</view>
+
+<!-- 底部抽屉：动态列表 -->
+<view class="drawer-overlay" wx:if="{{showActivityModal}}" bindtap="closeActivityModal">
+  <view class="drawer-sheet drawer-sheet-tall" catchtap="preventBubble">
+    <view class="drawer-grab"></view>
+    <view class="drawer-topline"></view>
+    <view class="drawer-head drawer-head-row">
+      <view class="drawer-head-text">
+        <text class="drawer-title">近 30 天动态</text>
+        <text class="drawer-sub">家庭内与当前宝宝相关的操作记录</text>
+      </view>
+      <text class="drawer-close" bindtap="closeActivityModal">×</text>
+    </view>
+    <scroll-view scroll-y class="drawer-scroll drawer-scroll-list" show-scrollbar="{{true}}">
+      <view class="activity-detail-item" wx:for="{{allActivityLogs}}" wx:key="_id">
+        <view class="activity-dot"></view>
+        <view class="activity-info">
+          <text class="activity-detail-time">{{item.timeStr}}</text>
+          <text class="activity-detail-content">{{item.description}}</text>
+        </view>
+      </view>
+      <view class="load-more" wx:if="{{hasMoreLogs}}" bindtap="loadMoreLogs">
+        <text>加载更多</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>
+

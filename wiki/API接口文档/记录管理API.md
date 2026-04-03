@@ -264,6 +264,18 @@ DenyAccess --> End
 - [api.js:264-286](file://miniprogram/utils/api.js#L264-L286)
 - [index.js:579-605](file://cloudfunctions/login/index.js#L579-L605)
 
+#### 批量最新记录接口（首页优化）
+
+为减少首页请求数量，当前实现新增批量查询接口（云函数 `login` 的 action 方式）：
+
+- 调用方式：`action = getLatestRecordsByBabyIds`
+- 入参：`babyIds: string[]`（最多100个，去重后处理）
+- 返回：`latestRecordMap`，结构为 `{ [babyId]: latestRecord }`
+- 权限：仅返回当前用户可访问家庭内宝宝的数据
+- 实现细节：服务端按 `recordDate` 倒序分页查询，直到为每个宝宝收集到最新记录，避免默认返回条数限制导致漏数
+
+该接口用于替代“逐个宝宝查询最新记录”的 N+1 请求模式。
+
 ### 计算逻辑实现
 
 #### 年龄计算算法

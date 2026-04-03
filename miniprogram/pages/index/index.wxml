@@ -6,7 +6,7 @@
       <view class="icon-wrapper">
         <text class="main-icon">🌱</text>
       </view>
-      <text class="title">宝宝助手</text>
+      <text class="title">萌芽季</text>
       <text class="subtitle" wx:if="{{babies.length > 0}}">我的宝宝（共 {{babies.length}} 位）</text>
       <text class="subtitle" wx:else>还没有宝宝，快去添加吧～</text>
     </view>

@@ -15,13 +15,13 @@ Page({
 
   onShow() {
     this.loadBabies()
+    this.getTabBar().setData({
+      selected: 0
+    })
   },
 
   async loadBabies() {
     try {
-      // 清除缓存，确保获取最新数据
-      api.clearCache('cache_babies')
-      api.clearCache('cache_families')
       // 并行获取宝宝列表和家庭列表，减少等待时间
       const [babiesData, families] = await Promise.all([
         api.getBabies(),
@@ -38,20 +38,20 @@ Page({
         familyColorMap[f._id] = getColorIndexById(f._id)
       })
       
-      // 批量获取所有宝宝的最新记录（并行请求）
-      const latestRecords = await Promise.all(
-        babiesData.map(baby => api.getLatestRecord(baby._id))
+      // 批量获取所有宝宝的最新记录（单次云函数调用，避免 N+1）
+      const latestRecordMap = await api.getLatestRecordsByBabyIds(
+        babiesData.map(baby => baby._id)
       )
       
       // Process data for display
-      const formattedBabies = babiesData.map((baby, index) => {
+      const formattedBabies = babiesData.map((baby) => {
         const ageObj = util.calculateAge(baby.birthDate)
         const ageStr = util.formatAgeString(ageObj)
         const familyColorIndex = familyColorMap[baby.familyId] !== undefined ? familyColorMap[baby.familyId] : getColorIndexById(baby.familyId)
         
         return Object.assign({}, baby, {
           ageStr: ageStr,
-          latestRecord: latestRecords[index],
+          latestRecord: latestRecordMap[baby._id] || null,
           familyName: familyMap[baby.familyId] || '未知家庭',
           familyColorIndex: familyColorIndex
         })
@@ -104,12 +104,20 @@ Page({
       return { canAddBaby: false, availableSlots: 0, hasFamily: true, isGuardian: false }
     }
     
+    const countByFamilyId = {}
+    for (let i = 0; i < babies.length; i++) {
+      const fid = babies[i].familyId
+      if (fid) {
+        countByFamilyId[fid] = (countByFamilyId[fid] || 0) + 1
+      }
+    }
+
     // 按家庭独立检查：计算所有guardian家庭还能添加的宝宝总数
     let canAddBaby = false
     let availableSlots = 0
-    
+
     for (const family of guardianFamilies) {
-      const babyCountInFamily = babies.filter(b => b.familyId === family._id).length
+      const babyCountInFamily = countByFamilyId[family._id] || 0
       const slotsInFamily = 3 - babyCountInFamily
       if (slotsInFamily > 0) {
         availableSlots += slotsInFamily
@@ -192,7 +200,12 @@ Page({
           if (res.confirm) {
             try {
               await api.deleteBaby(id)
-              await this.loadBabies()
+              // 本地就地更新列表，避免整页重载
+              const babies = (this.data.babies || []).filter(baby => baby._id !== id)
+              this.setData({
+                babies,
+                ...this.calculateCanAddBaby(babies, this.data.families || [])
+              })
               wx.showToast({
                 title: '删除成功',
                 icon: 'success'

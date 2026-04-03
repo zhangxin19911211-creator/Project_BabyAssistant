@@ -75,7 +75,7 @@
             <button class="action-btn-small leave-btn" bindtap="leaveFamily" data-family-id="{{item._id}}">
               <text class="btn-text">退出家庭</text>
             </button>
-            <button wx:if="{{item.currentUserPermission !== 'viewer'}}" class="action-btn-small invite-btn" bindtap="openInviteModal" data-family-id="{{item._id}}">
+            <button class="action-btn-small invite-btn" bindtap="openInviteModal" data-family-id="{{item._id}}">
               <text class="btn-text">邀请成员</text>
             </button>
           </view>
@@ -85,7 +85,7 @@
           <view class="member-card" wx:for="{{item.members}}" wx:key="openid" wx:for-item="member">
             <view class="member-avatar">
               <image class="avatar" src="{{member.avatarUrl || '../../images/avatar.png'}}" mode="aspectFill"></image>
-              <text wx:if="{{member.openid === item.creatorOpenid}}" class="creator-badge">创建者</text>
+              <text wx:if="{{member.openid === item.creatorOpenid}}" class="creator-badge">掌门人</text>
             </view>
             <view class="member-info">
               <view class="member-name-container">
@@ -108,8 +108,12 @@
     <text class="section-title">权限说明</text>
     <view class="permission-card">
       <view class="permission-item">
+        <text class="permission-name creator">掌门人</text>
+        <text class="permission-desc">家庭中最高权限</text>
+      </view>
+      <view class="permission-item">
         <text class="permission-name guardian">一级助教</text>
-        <text class="permission-desc">最高权限，可以新增和删除宝宝，可以新增和删除身高体重等数据，可以移除家庭成员，可以修改家庭成员权限</text>
+        <text class="permission-desc">可以新增和删除宝宝，可以新增和删除身高体重等数据</text>
       </view>
       <view class="permission-item">
         <text class="permission-name caretaker">二级助教</text>
@@ -130,24 +134,19 @@
         <text class="modal-subtitle">选择邀请的成员角色</text>
       </view>
       <view class="invite-options">
-        <button class="invite-option-card guardian-card" bindtap="inviteMember" data-member-type="guardian">
+        <view
+          wx:for="{{inviteRoleOptions}}"
+          wx:key="type"
+          class="invite-option-card {{item.cardClass}}"
+          hover-class="invite-option-hover"
+          bindtap="inviteMember"
+          data-member-type="{{item.type}}"
+        >
           <view class="card-content">
-            <text class="role-title">一级助教</text>
-            <text class="role-desc">最高权限，可管理宝宝和成员</text>
+            <text class="role-title">{{item.title}}</text>
+            <text class="role-desc">{{item.desc}}</text>
           </view>
-        </button>
-        <button class="invite-option-card caretaker-card" bindtap="inviteMember" data-member-type="caretaker">
-          <view class="card-content">
-            <text class="role-title">二级助教</text>
-            <text class="role-desc">可添加宝宝成长记录</text>
-          </view>
-        </button>
-        <button class="invite-option-card viewer-card" bindtap="inviteMember" data-member-type="viewer">
-          <view class="card-content">
-            <text class="role-title">围观吃瓜</text>
-            <text class="role-desc">仅可查看宝宝成长数据</text>
-          </view>
-        </button>
+        </view>
       </view>
       <button class="cancel-btn" bindtap="closeInviteModal">取消</button>
     </view>
@@ -357,6 +356,32 @@
             <text class="btn-text">提交反馈</text>
           </button>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 掌门人退出确认弹窗 -->
+  <view wx:if="{{showCreatorLeaveModal}}" class="modal-overlay" bindtap="closeCreatorLeaveModal">
+    <view class="modal-content creator-leave-modal" catchtap="noop">
+      <text class="modal-title">掌门人退出确认</text>
+      <text class="modal-subtitle">您是该家庭掌门人，如果退出家庭，则由任意一级助理担任掌门人，请确定是否家庭中存在其他一级助理</text>
+      <text wx:if="{{!hasOtherGuardians}}" class="modal-warning">当前家庭没有其他一级助理，无法退出，请先指定一级助理或选择解散家庭</text>
+      <view class="creator-leave-actions">
+        <button class="leave-action-btn cancel-btn" bindtap="closeCreatorLeaveModal">否</button>
+        <button class="leave-action-btn confirm-btn {{hasOtherGuardians ? '' : 'disabled-btn'}}" bindtap="confirmLeaveFamily" disabled="{{!hasOtherGuardians}}">是</button>
+        <button class="leave-action-btn danger-btn" bindtap="confirmDissolveFamily">解散家庭</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 解散家庭确认弹窗 -->
+  <view wx:if="{{showDissolveConfirmModal}}" class="modal-overlay" bindtap="closeDissolveConfirmModal">
+    <view class="modal-content dissolve-confirm-modal" catchtap="noop">
+      <text class="modal-title">解散家庭确认</text>
+      <text class="modal-subtitle danger-text">解散家庭将清除所有家庭和宝宝数据，无法恢复，请确认</text>
+      <view class="dissolve-confirm-actions">
+        <button class="leave-action-btn cancel-btn" bindtap="closeDissolveConfirmModal">取消</button>
+        <button class="leave-action-btn danger-btn" bindtap="executeDissolveFamily">确认解散</button>
       </view>
     </view>
   </view>

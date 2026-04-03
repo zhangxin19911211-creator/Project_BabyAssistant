@@ -34,6 +34,10 @@ export default class WxCanvas {
   }
 
   addEventListener() {
+    // ECharts dispose 会调用 removeEventListener，需成对存在
+  }
+
+  removeEventListener() {
     // noop
   }
 

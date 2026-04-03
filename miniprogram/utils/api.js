@@ -1,4 +1,3 @@
-const { calculateAge, formatAgeString } = require('./util.js')
 const db = wx.cloud.database()
 const _ = db.command
 
@@ -45,6 +44,12 @@ const clearCache = (key) => {
   }
 }
 
+/** 心情页等需要最新宝宝头像/家庭列表时调用，避免本地缓存与 babies 库不一致 */
+const invalidateMoodCaches = () => {
+  clearCache(CACHE_CONFIG.babies.key)
+  clearCache(CACHE_CONFIG.families.key)
+}
+
 // ===== 登录验证模块 =====
 // 获取当前用户信息
 const getCurrentUser = () => {
@@ -59,24 +64,30 @@ const waitForLogin = () => {
   return new Promise((resolve, reject) => {
     const app = getApp()
     const startTime = Date.now()
-    const maxWaitTime = 5000 // 最大等待时间 5 秒
-    
+    // 新环境云函数冷启动 + wx.login 链路可能超过 5s，适当放宽容忍
+    const maxWaitTime = 15000
+
     const checkLogin = () => {
       const currentTime = Date.now()
       if (currentTime - startTime > maxWaitTime) {
         reject(new Error('登录超时'))
         return
       }
-      
+
+      const storedOpenid = wx.getStorageSync('openid')
       if (app.globalData.userInfo && app.globalData.userInfo.openid) {
         resolve(app.globalData.userInfo)
+      } else if (storedOpenid) {
+        resolve({ openid: storedOpenid })
       } else {
         setTimeout(checkLogin, 100)
       }
     }
-    
+
     if (app.globalData.userInfo && app.globalData.userInfo.openid) {
       resolve(app.globalData.userInfo)
+    } else if (wx.getStorageSync('openid')) {
+      resolve({ openid: wx.getStorageSync('openid') })
     } else {
       app.login()
       setTimeout(checkLogin, 100)
@@ -101,10 +112,8 @@ const getBabies = async () => {
     if (cached) {
       return cached
     }
-    
-    await ensureLogin()
-    
-    // 使用云函数获取宝宝列表（绕过数据库权限限制）
+
+    // getBabies 在云函数内使用 wxContext.OPENID，不依赖客户端 globalData.userInfo
     const result = await wx.cloud.callFunction({
       name: 'login',
       data: {
@@ -130,18 +139,6 @@ const getBabies = async () => {
 // 根据ID获取宝宝信息
 const getBabyById = async (id) => {
   try {
-    // 获取当前用户信息
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      try {
-        // 等待登录完成
-        user = await waitForLogin()
-      } catch (loginError) {
-        console.error('登录失败', loginError)
-        return null
-      }
-    }
-    
     // 使用云函数获取宝宝信息，绕过数据库权限限制
     const result = await wx.cloud.callFunction({
       name: 'login',
@@ -166,18 +163,6 @@ const getBabyById = async (id) => {
 // 根据ID获取记录信息
 const getRecordById = async (id) => {
   try {
-    // 获取当前用户信息
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      try {
-        // 等待登录完成
-        user = await waitForLogin()
-      } catch (loginError) {
-        console.error('登录失败', loginError)
-        return null
-      }
-    }
-    
     // 使用云函数获取记录信息，绕过数据库权限限制
     const result = await wx.cloud.callFunction({
       name: 'login',
@@ -203,45 +188,33 @@ const getRecordById = async (id) => {
 const addBaby = async (babyInfo) => {
   try {
     await ensureLogin()
-    
+
     // 先确定有效的 familyId（传入的或默认的第一个家庭）
     let familyId = babyInfo.familyId
     if (!familyId) {
-      try {
-        const families = await getFamilies()
-        if (families.length > 0) {
-          familyId = families[0]._id
-        }
-      } catch (error) {
-        console.error('获取家庭信息失败', error)
+      const families = await getFamilies()
+      if (families.length > 0) {
+        familyId = families[0]._id
       }
     }
-    
-    // 如果仍没有 familyId，抛出错误
     if (!familyId) {
       throw new Error('请选择所属家庭')
     }
-    
-    // 检查宝宝数量限制（按家庭过滤）
-    const babies = await getBabies()
-    const babiesInFamily = babies.filter(b => b.familyId === familyId)
-    if (babiesInFamily.length >= 3) {
-      throw new Error('该家庭最多只能添加 3 个宝宝')
+
+    const addBabyResult = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'addBaby',
+        babyInfo: Object.assign({}, babyInfo, { familyId })
+      }
+    })
+
+    if (!addBabyResult.result || !addBabyResult.result.success) {
+      throw new Error(addBabyResult.result?.error || '添加宝宝失败')
     }
-    
-    const user = getCurrentUser()
-    const newBaby = Object.assign({}, babyInfo, {
-      openid: user.openid,
-      familyId: familyId,
-      createTime: new Date()
-    })
-    
-    const result = await db.collection('babies').add({
-      data: newBaby
-    })
-    
-    newBaby._id = result._id
-    
+
+    const newBaby = addBabyResult.result.baby
+
     // 创建出生记录
     if (babyInfo.birthHeight && babyInfo.birthWeight) {
       await addRecord({
@@ -251,11 +224,11 @@ const addBaby = async (babyInfo) => {
         recordDate: babyInfo.birthDate
       }, true)
     }
-    
+
     // 清除缓存，确保下次获取最新数据
     clearCache(CACHE_CONFIG.babies.key)
     clearCache(CACHE_CONFIG.families.key)
-    
+
     return newBaby
   } catch (error) {
     console.error('添加宝宝失败', error)
@@ -312,26 +285,51 @@ const getRecords = async () => {
   }
 }
 
-// 根据宝宝ID获取记录
-const getRecordsByBabyId = async (babyId) => {
-  try {
-    // 使用云函数获取宝宝记录，绕过数据库权限限制
+// 根据宝宝ID获取记录；不传 page 时云函数分页拉取并合并；传 page 时返回 { records, hasMore }
+const getRecordsByBabyId = async (babyId, options = {}) => {
+  const pageSize = Math.min(200, Math.max(1, options.pageSize || 200))
+  const isPagedRequest = options.page != null
+
+  const fetchPage = async (page) => {
     const result = await wx.cloud.callFunction({
       name: 'login',
       data: {
         action: 'getRecordsByBabyId',
-        babyId: babyId
+        babyId,
+        recordsPage: page,
+        recordsPageSize: pageSize
       }
     })
-    
     if (result.result && result.result.success) {
-      return result.result.records || []
-    } else {
-      console.error('获取宝宝记录失败', result.result?.error)
-      return []
+      return {
+        records: result.result.records || [],
+        hasMore: !!result.result.hasMore
+      }
     }
+    console.error('获取宝宝记录失败', result.result?.error)
+    return { records: [], hasMore: false }
+  }
+
+  try {
+    if (isPagedRequest) {
+      return await fetchPage(options.page)
+    }
+    const all = []
+    let page = 1
+    let hasMore = true
+    const maxPages = 25
+    while (hasMore && page <= maxPages) {
+      const { records, hasMore: more } = await fetchPage(page)
+      all.push(...records)
+      hasMore = more
+      page += 1
+    }
+    return all
   } catch (error) {
     console.error('获取宝宝记录失败', error)
+    if (isPagedRequest) {
+      return { records: [], hasMore: false }
+    }
     return []
   }
 }
@@ -339,57 +337,56 @@ const getRecordsByBabyId = async (babyId) => {
 // 获取最新记录
 const getLatestRecord = async (babyId) => {
   try {
-    const records = await getRecordsByBabyId(babyId)
-    return records[0] || null
+    const { records } = await getRecordsByBabyId(babyId, { page: 1, pageSize: 1 })
+    return (records && records[0]) || null
   } catch (error) {
     console.error('获取最新记录失败', error)
     return null
   }
 }
 
+// 批量获取最新记录，返回 { babyId: latestRecord }
+const getLatestRecordsByBabyIds = async (babyIds) => {
+  try {
+    const ids = Array.from(new Set((babyIds || []).filter(Boolean)))
+    if (ids.length === 0) {
+      return {}
+    }
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getLatestRecordsByBabyIds',
+        babyIds: ids
+      }
+    })
+    if (result.result && result.result.success) {
+      return result.result.latestRecordMap || {}
+    }
+    console.error('批量获取最新记录失败', result.result?.error)
+    return {}
+  } catch (error) {
+    console.error('批量获取最新记录失败', error)
+    return {}
+  }
+}
+
 // 添加记录
 const addRecord = async (recordInfo, isBirth = false) => {
   try {
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      user = await waitForLogin()
-    }
-    
-    const baby = await getBabyById(recordInfo.babyId)
-    if (!baby) {
-      throw new Error('宝宝不存在')
-    }
-    
-    // 检查用户权限（二级助教和一级助教可以添加记录）
-    const families = await getFamilies()
-    const family = families.find(f => f._id === baby.familyId)
-    if (!family) {
-      throw new Error('无权限为此宝宝添加记录')
-    }
-    
-    const currentMember = family.members.find(m => m.openid === user.openid)
-    if (!currentMember || currentMember.permission === 'viewer') {
-      throw new Error('只有二级助教和一级助教才可以添加记录')
-    }
-    
-    let ageInMonths = 0
-    if (!isBirth) {
-      const ageObj = calculateAge(baby.birthDate, recordInfo.recordDate)
-      ageInMonths = ageObj.years * 12 + ageObj.months + (ageObj.days >= 15 ? 0.5 : 0)
-    }
-    
-    const newRecord = Object.assign({}, recordInfo, {
-      ageInMonths: ageInMonths,
-      openid: user.openid,
-      createTime: new Date()
+    await ensureLogin()
+
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'addRecord',
+        recordInfo: Object.assign({}, recordInfo, { isBirth })
+      }
     })
-    
-    const result = await db.collection('records').add({
-      data: newRecord
-    })
-    
-    newRecord._id = result._id
-    return newRecord
+
+    if (result.result && result.result.success) {
+      return result.result.record
+    }
+    throw new Error(result.result?.error || '添加记录失败')
   } catch (error) {
     console.error('添加记录失败', error)
     throw error
@@ -424,36 +421,26 @@ const deleteRecord = async (id) => {
   }
 }
 
-// 更新宝宝头像
+// 更新宝宝头像（云函数写入 babies，与 updateBabyName 一致，避免客户端无写权限）
 const updateBabyAvatar = async (id, avatarUrl) => {
   try {
-    // 获取当前用户信息
-    let user = getCurrentUser()
-    if (!user || !user.openid) {
-      // 等待登录完成
-      user = await waitForLogin()
-    }
-    
-    // 验证宝宝是否存在且用户有权限
-    const baby = await getBabyById(id)
-    if (!baby) {
-      throw new Error('宝宝不存在')
-    }
-    
-    // 检查用户权限
-    const hasPermission = await checkPermission(id, 'guardian')
-    if (!hasPermission) {
-      throw new Error('只有一级助教才可以更新宝宝头像')
-    }
-    
-    await db.collection('babies').doc(id).update({
+    await ensureLogin()
+
+    const result = await wx.cloud.callFunction({
+      name: 'login',
       data: {
-        avatarUrl: avatarUrl
+        action: 'updateBabyAvatar',
+        babyId: id,
+        avatarUrl: avatarUrl,
+        fileID: avatarUrl
       }
     })
-    
-    // 清除宝宝列表缓存，确保首页能看到更新后的头像
-    clearCache(CACHE_CONFIG.babies.key)
+
+    if (result.result && result.result.success) {
+      clearCache(CACHE_CONFIG.babies.key)
+      return result.result
+    }
+    throw new Error(result.result?.error || '更新宝宝头像失败')
   } catch (error) {
     console.error('更新头像失败', error)
     throw error
@@ -502,10 +489,8 @@ const getFamilies = async () => {
     if (cached) {
       return cached
     }
-    
-    await ensureLogin()
-    
-    // 使用云函数获取家庭列表（绕过数据库权限限制）
+
+    // getFamilies 在云函数内使用 OPENID，无需等待客户端登录态写回
     const result = await wx.cloud.callFunction({
       name: 'login',
       data: {
@@ -636,16 +621,7 @@ const joinFamily = async (inviteCode) => {
       // 等待登录完成
       user = await waitForLogin()
     }
-    
-    // 检查用户加入的家庭数量
-    const joinedFamilies = await db.collection('families').where({
-      'members.openid': user.openid
-    }).get()
-    
-    if (joinedFamilies.data.length >= 3) {
-      throw new Error('最多只能加入3个家庭')
-    }
-    
+
     // 准备成员信息，使用用户的实际用户名和头像
     let nickName = user.nickName || user.userInfo?.nickName || '用户'
     let avatarUrl = user.avatarUrl || user.userInfo?.avatarUrl || ''
@@ -720,6 +696,34 @@ const leaveFamily = async (familyId) => {
   }
 }
 
+// 解散家庭
+const dissolveFamily = async (familyId) => {
+  try {
+    await ensureLogin()
+    
+    // 使用云函数解散家庭
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'dissolveFamily',
+        familyId: familyId
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      // 清除缓存
+      clearCache(CACHE_CONFIG.families.key)
+      clearCache(CACHE_CONFIG.babies.key)
+      return true
+    } else {
+      throw new Error(result.result?.error || '解散家庭失败')
+    }
+  } catch (error) {
+    console.error('解散家庭失败', error)
+    throw error
+  }
+}
+
 // 更新成员信息（头像和用户名）
 const updateMemberInfo = async (familyId, nickName, avatarUrl) => {
   try {
@@ -766,8 +770,7 @@ const updateFamilyName = async (familyId, newName) => {
       data: {
         action: 'updateFamilyName',
         familyId: familyId,
-        newName: newName,
-        openid: user.openid
+        newName: newName
       }
     })
     
@@ -800,8 +803,7 @@ const updateMemberPermission = async (familyId, memberOpenid, permission) => {
         action: 'updateMemberPermission',
         familyId: familyId,
         memberOpenid: memberOpenid,
-        permission: permission,
-        openid: user.openid
+        permission: permission
       }
     })
     
@@ -833,8 +835,7 @@ const removeFamilyMember = async (familyId, memberOpenid) => {
       data: {
         action: 'removeFamilyMember',
         familyId: familyId,
-        memberOpenid: memberOpenid,
-        openid: user.openid
+        memberOpenid: memberOpenid
       }
     })
     
@@ -921,7 +922,256 @@ const checkPermission = async (babyId, requiredPermission) => {
   }
 }
 
+// ========== Mood 心情评价相关接口 ==========
+
+// 获取宝宝某月的心情记录
+const getMoodsByMonth = async (babyId, year, month) => {
+  try {
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getMoodsByMonth',
+        babyId,
+        year,
+        month
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.moods || []
+    } else {
+      throw new Error(result.result?.error || '获取心情记录失败')
+    }
+  } catch (error) {
+    console.error('获取心情记录失败', error)
+    throw error
+  }
+}
+
+// 获取某天的心情记录
+const getMoodByDate = async (babyId, date) => {
+  try {
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getMoodByDate',
+        babyId,
+        date
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.mood
+    } else {
+      throw new Error(result.result?.error || '获取心情记录失败')
+    }
+  } catch (error) {
+    console.error('获取心情记录失败', error)
+    throw error
+  }
+}
+
+// 添加或更新心情评价
+const addMood = async (moodInfo) => {
+  try {
+    await ensureLogin()
+    
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'addMood',
+        moodInfo
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result
+    } else {
+      throw new Error(result.result?.error || '添加心情评价失败')
+    }
+  } catch (error) {
+    console.error('添加心情评价失败', error)
+    throw error
+  }
+}
+
+// 删除心情记录
+const deleteMood = async (moodId) => {
+  try {
+    await ensureLogin()
+    
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'deleteMood',
+        moodId
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result
+    } else {
+      throw new Error(result.result?.error || '删除心情记录失败')
+    }
+  } catch (error) {
+    console.error('删除心情记录失败', error)
+    throw error
+  }
+}
+
+// 删除心情某日备注条目（仅云函数校验一级助教）
+const deleteMoodNote = async (moodId, entryId) => {
+  try {
+    await ensureLogin()
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'deleteMoodNote',
+        moodId,
+        entryId
+      }
+    })
+    if (result.result && result.result.success) {
+      return result.result
+    }
+    throw new Error(result.result?.error || '删除备注失败')
+  } catch (error) {
+    console.error('删除备注失败', error)
+    throw error
+  }
+}
+
+// ========== UserFavorites 用户关注相关接口 ==========
+
+// 获取用户关注的宝宝列表
+const getUserFavorites = async () => {
+  try {
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getUserFavorites'
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.favorites || []
+    } else {
+      throw new Error(result.result?.error || '获取关注列表失败')
+    }
+  } catch (error) {
+    console.error('获取关注列表失败', error)
+    throw error
+  }
+}
+
+// 设置用户关注的宝宝
+const setUserFavorite = async (babyId) => {
+  try {
+    await ensureLogin()
+    
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'setUserFavorite',
+        babyId
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result
+    } else {
+      throw new Error(result.result?.error || '设置关注失败')
+    }
+  } catch (error) {
+    console.error('设置关注失败', error)
+    throw error
+  }
+}
+
+// 批量关注宝宝（首次可多选）；限并发，失败即中止
+const setUserFavorites = async (babyIds) => {
+  const ids = Array.from(new Set((babyIds || []).filter(Boolean)))
+  const concurrency = 4
+  for (let i = 0; i < ids.length; i += concurrency) {
+    const batch = ids.slice(i, i + concurrency)
+    const settled = await Promise.allSettled(batch.map((id) => setUserFavorite(id)))
+    for (let j = 0; j < settled.length; j++) {
+      if (settled[j].status === 'rejected') {
+        throw settled[j].reason
+      }
+    }
+  }
+}
+
+// 提交反馈（写库与邮件逻辑在云函数）
+const submitFeedback = async (content, imageFileIds) => {
+  await ensureLogin()
+  const result = await wx.cloud.callFunction({
+    name: 'login',
+    data: {
+      action: 'submitFeedback',
+      content,
+      imageFileIds: imageFileIds || []
+    }
+  })
+  if (result.result && result.result.success) {
+    return result.result
+  }
+  throw new Error(result.result?.error || '提交反馈失败')
+}
+
+// ========== ActivityLogs 活动日志相关接口 ==========
+
+// 获取家庭活动日志
+const getActivityLogs = async (familyId, page = 1, pageSize = 20) => {
+  try {
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getActivityLogs',
+        familyId,
+        page,
+        pageSize
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.logs || []
+    } else {
+      throw new Error(result.result?.error || '获取活动日志失败')
+    }
+  } catch (error) {
+    console.error('获取活动日志失败', error)
+    throw error
+  }
+}
+
+// 获取宝宝相关的活动日志
+const getActivityLogsByBaby = async (babyId, page = 1, pageSize = 20) => {
+  try {
+    const result = await wx.cloud.callFunction({
+      name: 'login',
+      data: {
+        action: 'getActivityLogsByBaby',
+        babyId,
+        page,
+        pageSize
+      }
+    })
+    
+    if (result.result && result.result.success) {
+      return result.result.logs || []
+    } else {
+      throw new Error(result.result?.error || '获取活动日志失败')
+    }
+  } catch (error) {
+    console.error('获取活动日志失败', error)
+    throw error
+  }
+}
+
 module.exports = {
+  invalidateMoodCaches,
   getBabies,
   getBabyById,
   getRecordById,
@@ -931,6 +1181,7 @@ module.exports = {
   updateBabyName,
   getRecordsByBabyId,
   getLatestRecord,
+  getLatestRecordsByBabyIds,
   addRecord,
   deleteRecord,
   getFamily,
@@ -940,10 +1191,25 @@ module.exports = {
   createInviteCode,
   joinFamily,
   leaveFamily,
+  dissolveFamily,
   updateMemberInfo,
   updateFamilyName,
   updateMemberPermission,
   removeFamilyMember,
   checkPermission,
-  clearCache
+  clearCache,
+  // Mood相关
+  getMoodsByMonth,
+  getMoodByDate,
+  addMood,
+  deleteMood,
+  deleteMoodNote,
+  // UserFavorites相关
+  getUserFavorites,
+  setUserFavorite,
+  setUserFavorites,
+  submitFeedback,
+  // ActivityLogs相关
+  getActivityLogs,
+  getActivityLogsByBaby
 }
