@@ -21,6 +21,16 @@ ehthumbs.db
 # Editor directories and files
 .vscode/
 .idea/
+
+# IDE / AI agent tooling (not part of WeChat miniprogram or cloudfunctions)
+.agents/
+.claude/
+.codebuddy/
+.cursor/
+.kiro/
+.qoder/
+.trae/
+skills-lock.json
 *.suo
 *.ntvs*
 *.njsproj
