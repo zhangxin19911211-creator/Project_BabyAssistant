@@ -400,23 +400,20 @@ CloudFunc-->>Client : 返回业务结果
 
 ### 反馈系统API
 
-#### 提交反馈
-- **HTTP方法**: POST
-- **URL模式**: `/submitFeedback`
-- **请求参数**: 
-  - `content`: 反馈内容
-  - `images`: 图片数组
-- **响应格式**: 
-  ```json
-  {
-    "success": true,
-    "message": "反馈已收到"
-  }
-  ```
+#### 提交反馈（云函数，非 HTTP 路径）
+
+小程序通过 `wx.cloud.callFunction` 调用 **`login`**，**不是** REST `/submitFeedback`。
+
+- **云函数**: `login`
+- **参数**: `action: 'submitFeedback'`，`content`（字符串），`imageFileIds`（已上传的 `cloud://` fileID 数组，≤3，路径须含 `feedback/`）
+- **成功时 `result` 常见字段**: `success`, `feedbackId`, `emailOk`, `emailMessage`
+- **说明**: 写库与触发邮件在 `login` 内完成；`sendFeedbackEmail` 由 `login` 服务端调用，前端无需直接调用。
 
 **章节来源**
-- [family.js:676-745](file://miniprogram/pages/family/family.js#L676-L745)
-- [index.js:6-20](file://cloudfunctions/sendFeedbackEmail/index.js#L6-L20)
+- [family.js](file://miniprogram/pages/family/family.js)（`submitFeedback`）
+- [api.js](file://miniprogram/utils/api.js)（`submitFeedback`）
+- [login/index.js](file://cloudfunctions/login/index.js)（`submitFeedback` 分支）
+- [sendFeedbackEmail/index.js](file://cloudfunctions/sendFeedbackEmail/index.js)（SMTP 实现）
 
 ## 依赖关系分析
 
@@ -501,6 +498,8 @@ N[页面5] --> A
 ## 附录
 
 ### 接口版本管理
+
+**当前小程序产品版本**：v3.0.0（与仓库 `README.md` / `wiki/项目概述.md` 一致）。
 
 系统采用语义化版本控制：
 - **版本格式**: 主版本号.次版本号.修订号

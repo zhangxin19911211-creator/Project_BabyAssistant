@@ -133,12 +133,16 @@ Project_BabyAssistant/        # 或你本地的克隆目录名
 
 ## 版本更新
 
-### v2.3.0
-- 心情日历 Tab、`moods` / `userFavorites` / `activityLogs` 等数据能力
-- 自定义 TabBar（宝宝 / 心情 / 家庭）
-- 微信同声传译插件接入（心情语音输入）
-- 图表与列表等性能与刷新策略优化；`safeLog` 等调试辅助
-- 文档与 [GitHub Wiki](https://github.com/zhangxin19911211-creator/Project_BabyAssistant/wiki) 对齐说明
+**当前版本：v3.0.0**
+
+### v3.0.0
+- **心情日历**：新 Tab 与日历视图，心情评分、备注与收藏；集合 `moods`、`userFavorites`、`activityLogs` 等
+- **自定义 TabBar**：宝宝 / 心情 / 家庭，选中动效与图标状态
+- **微信同声传译（WechatSI）**：心情备注语音输入（需小程序后台配置插件）
+- **安全与反馈**：反馈收口 `login` 云函数（`submitFeedback`、限流、写 `feedback`）；可选 `sendFeedbackEmail`；图片上传大小限制；`safeLog` 生产日志
+- **性能**：心情页并行拉取、缓存策略优化；成长记录分页；`ec-canvas` 按需与最小刷新；`lazyCodeLoading` 按需注入组件
+- **体验与 UI**：心情与品牌色统一、家庭页等细节优化；批量关注限并发
+- **文档**：仓库 `wiki/` 与 [GitHub Wiki](https://github.com/zhangxin19911211-creator/Project_BabyAssistant/wiki) 对齐
 
 ### v2.2.0
 - 宝宝卡片 UI 与字体优化
