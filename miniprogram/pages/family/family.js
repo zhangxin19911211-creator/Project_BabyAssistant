@@ -845,8 +845,15 @@ Page({
     try {
       const maxBytes = 2 * 1024 * 1024
       const uploadedImages = []
+      const fs = wx.getFileSystemManager()
       for (const image of feedbackImages) {
-        const fileInfo = await wx.getFileInfo({ filePath: image })
+        const fileInfo = await new Promise((resolve, reject) => {
+          fs.getFileInfo({
+            filePath: image,
+            success: resolve,
+            fail: reject
+          })
+        })
         if (fileInfo.size > maxBytes) {
           wx.hideLoading()
           wx.showToast({ title: '单张图片不超过2MB', icon: 'none' })

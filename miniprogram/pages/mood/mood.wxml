@@ -22,6 +22,7 @@
       </view>
     </scroll-view>
     <view class="manage-fav-bar">
+      <text class="scroll-hint">向右拖拽显示更多宝宝</text>
       <text class="manage-fav-link" bindtap="openManageFavorites">添加或管理关注的宝宝</text>
     </view>
   </view>
@@ -118,18 +119,17 @@
   </view>
 </view>
 
-<!-- 选择关注宝宝：自定义 TabBar 会盖住普通 fixed 层，需超高 z-index；确定条固定在 TabBar 上方 -->
-<view class="mood-fav-overlay" wx:if="{{showBabySelector}}">
-  <view class="mood-fav-mask" bindtap="closeBabySelector"></view>
-  <view class="mood-fav-panel" catchtap="preventBubble">
+<!-- 底部抽屉：选择宝宝 -->
+<view class="drawer-overlay" wx:if="{{showBabySelector}}" bindtap="closeBabySelector">
+  <view class="drawer-sheet" catchtap="preventBubble">
     <view class="drawer-grab"></view>
     <view class="drawer-topline"></view>
     <view class="drawer-head">
       <text class="drawer-title">选择关注的宝宝</text>
       <text class="drawer-sub">可多选，关注后在此记录心情</text>
     </view>
-    <scroll-view scroll-y class="mood-fav-scroll" show-scrollbar="{{false}}">
-      <text class="selector-intro">请选择您要关注的宝宝：点选头像可多选，再点底部「确定」保存。</text>
+    <scroll-view scroll-y class="drawer-scroll drawer-scroll-tall" show-scrollbar="{{false}}">
+      <text class="selector-intro">请选择您要关注的宝宝：</text>
       <view class="selector-baby-list">
         <view 
           class="selector-baby-item {{selectedBabySet[item._id] ? 'selected' : ''}}" 
@@ -144,13 +144,9 @@
         </view>
       </view>
     </scroll-view>
-  </view>
-  <view class="mood-fav-footer" catchtap="preventBubble">
-    <view 
-      class="mood-fav-btn {{selectedBabyIds.length === 0 ? 'mood-fav-btn--disabled' : ''}}"
-      hover-class="{{selectedBabyIds.length === 0 ? 'none' : 'mood-fav-btn--hover'}}"
-      bindtap="onConfirmBabySelectionTap"
-    >确定</view>
+    <view class="drawer-actions safe-bottom">
+      <button class="btn-drawer-primary" bindtap="confirmBabySelection" disabled="{{selectedBabyIds.length === 0}}">确定</button>
+    </view>
   </view>
 </view>
 

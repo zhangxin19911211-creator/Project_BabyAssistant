@@ -138,6 +138,25 @@ const getBabies = async () => {
   }
 }
 
+/** 保存首页宝宝顺序（云函数校验与当前可见列表一致） */
+const setHomeBabyOrder = async (babyIds) => {
+  if (!Array.isArray(babyIds) || babyIds.length === 0) {
+    throw new Error('宝宝列表为空')
+  }
+  const result = await wx.cloud.callFunction({
+    name: 'login',
+    data: {
+      action: 'setHomeBabyOrder',
+      babyIds
+    }
+  })
+  if (result.result && result.result.success) {
+    clearCache(CACHE_CONFIG.babies.key)
+    return true
+  }
+  throw new Error(result.result?.error || '保存排序失败')
+}
+
 // 根据ID获取宝宝信息
 const getBabyById = async (id) => {
   try {
@@ -1175,6 +1194,7 @@ const getActivityLogsByBaby = async (babyId, page = 1, pageSize = 20) => {
 module.exports = {
   invalidateMoodCaches,
   getBabies,
+  setHomeBabyOrder,
   getBabyById,
   getRecordById,
   addBaby,

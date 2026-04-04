@@ -37,6 +37,12 @@ skills-lock.json
 *.sln
 *.sw?
 
+# Local PDF extraction tooling (not part of miniprogram build)
+pdfextract/
+
+# Optional local copy of NHC WS/T 423 PDF (large; keep out of repo unless you intend to version it)
+*生长标准.pdf
+
 # Cloud functions node_modules
 cloudfunctions/**/node_modules/
 

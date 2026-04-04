@@ -317,10 +317,37 @@ Component({
 });
 
 function wrapTouch(event) {
-  for (let i = 0; i < event.touches.length; ++i) {
-    const touch = event.touches[i];
-    touch.offsetX = touch.x;
-    touch.offsetY = touch.y;
+  if (!event) {
+    return event
   }
-  return event;
+  const noop = function () {}
+  if (typeof event.preventDefault !== 'function') {
+    event.preventDefault = noop
+  }
+  if (typeof event.stopPropagation !== 'function') {
+    event.stopPropagation = noop
+  }
+  const patchTouch = function (touch) {
+    if (!touch) {
+      return
+    }
+    if (touch.x != null && touch.y != null) {
+      touch.offsetX = touch.x
+      touch.offsetY = touch.y
+    }
+    if (typeof touch.preventDefault !== 'function') {
+      touch.preventDefault = noop
+    }
+  }
+  if (event.touches && event.touches.length > 0) {
+    for (let i = 0; i < event.touches.length; i++) {
+      patchTouch(event.touches[i])
+    }
+  }
+  if (event.changedTouches && event.changedTouches.length > 0) {
+    for (let j = 0; j < event.changedTouches.length; j++) {
+      patchTouch(event.changedTouches[j])
+    }
+  }
+  return event
 }

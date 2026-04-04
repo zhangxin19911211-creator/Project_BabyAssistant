@@ -405,6 +405,15 @@ page {
   border: 2rpx solid rgba(127, 209, 185, 0.1);
 }
 
+.chart-gesture-hint {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--baby-text-secondary, #888);
+  margin-top: 12rpx;
+  padding: 0 8rpx;
+}
+
 .legend {
   display: flex;
   justify-content: center;

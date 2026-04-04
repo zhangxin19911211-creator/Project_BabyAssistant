@@ -43,6 +43,30 @@ function calculateAgeInMonths(birthDate, recordDate) {
   return monthValue + (days >= 15 ? 0.5 : 0)
 }
 
+/** 将用户保存的首页宝宝顺序合并到默认排序结果（新宝宝追加在末尾） */
+function mergeHomeBabyOrder(sortedBabies, homeBabyOrder) {
+  if (!Array.isArray(homeBabyOrder) || homeBabyOrder.length === 0) {
+    return sortedBabies
+  }
+  const byId = new Map(sortedBabies.map((b) => [b._id, b]))
+  const used = new Set()
+  const ordered = []
+  for (let i = 0; i < homeBabyOrder.length; i++) {
+    const id = homeBabyOrder[i]
+    if (byId.has(id) && !used.has(id)) {
+      ordered.push(byId.get(id))
+      used.add(id)
+    }
+  }
+  for (let j = 0; j < sortedBabies.length; j++) {
+    const b = sortedBabies[j]
+    if (!used.has(b._id)) {
+      ordered.push(b)
+    }
+  }
+  return ordered
+}
+
 function generateSecureInviteCode(length = 8) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -167,8 +191,72 @@ exports.main = async (event, context) => {
         // 同一家庭的宝宝按创建时间排序
         return new Date(b.createTime) - new Date(a.createTime)
       })
-      
-      return { success: true, babies: sortedBabies || [] }
+
+      let merged = sortedBabies
+      try {
+        const userOrderRes = await db.collection('users').where({ openid }).limit(1).get()
+        const homeBabyOrder = userOrderRes.data[0] && userOrderRes.data[0].homeBabyOrder
+        merged = mergeHomeBabyOrder(sortedBabies, homeBabyOrder)
+      } catch (e) {
+        console.warn('mergeHomeBabyOrder failed', e)
+      }
+
+      return { success: true, babies: merged || [] }
+    }
+
+    // 保存首页宝宝排序（须包含当前用户可见的全部宝宝 id，且为排列）
+    if (action === 'setHomeBabyOrder' && Array.isArray(event.babyIds)) {
+      const openid = wxContext.OPENID
+      const familiesResult = await db.collection('families').where({
+        'members.openid': openid
+      }).get()
+
+      if (familiesResult.data.length === 0) {
+        return { success: false, error: '无家庭数据' }
+      }
+
+      const sortedFamilies = familiesResult.data.sort((a, b) => {
+        const isCreatorA = a.creatorOpenid === openid
+        const isCreatorB = b.creatorOpenid === openid
+        if (isCreatorA && !isCreatorB) return -1
+        if (!isCreatorA && isCreatorB) return 1
+        return new Date(b.createTime) - new Date(a.createTime)
+      })
+      const familyIds = sortedFamilies.map((f) => f._id)
+
+      const babiesResult = await db.collection('babies').where({
+        familyId: _.in(familyIds)
+      }).get()
+      const validIds = new Set(babiesResult.data.map((b) => b._id))
+
+      const incoming = event.babyIds.filter((id) => typeof id === 'string' && id)
+      if (incoming.length !== validIds.size) {
+        return { success: false, error: '宝宝列表与当前可见不一致' }
+      }
+      const seen = new Set()
+      for (let i = 0; i < incoming.length; i++) {
+        if (!validIds.has(incoming[i]) || seen.has(incoming[i])) {
+          return { success: false, error: '宝宝 id 无效或重复' }
+        }
+        seen.add(incoming[i])
+      }
+
+      const userResult = await db.collection('users').where({ openid }).limit(1).get()
+      if (userResult.data.length > 0) {
+        await db.collection('users').doc(userResult.data[0]._id).update({
+          data: { homeBabyOrder: incoming }
+        })
+      } else {
+        await db.collection('users').add({
+          data: {
+            openid,
+            homeBabyOrder: incoming,
+            createTime: new Date(),
+            lastLoginTime: new Date()
+          }
+        })
+      }
+      return { success: true }
     }
 
     // 批量获取宝宝最新记录，减少客户端 N+1 请求

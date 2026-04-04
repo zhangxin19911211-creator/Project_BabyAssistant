@@ -16,6 +16,7 @@ page {
   background: linear-gradient(180deg, var(--baby-primary-light) 0%, var(--baby-bg) 30%);
   min-height: 100vh;
   padding: 30rpx;
+  padding-bottom: calc(30rpx + 100rpx + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -1033,8 +1034,8 @@ page {
 .invite-options {
   display: flex;
   flex-direction: column;
-  gap: 28rpx;
-  margin-bottom: 36rpx;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
 }
 
 .invite-modal {
@@ -1062,10 +1063,10 @@ page {
 }
 
 .invite-option-card {
-  border-radius: 28rpx;
-  padding: 32rpx;
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   border: 3rpx solid transparent;
@@ -1082,8 +1083,8 @@ page {
 }
 
 .invite-option-card:active {
-  transform: translateY(-6rpx) scale(1.02);
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.15);
+  transform: translateY(-4rpx) scale(1.02);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
 }
 
 .invite-option-hover {
@@ -1120,7 +1121,9 @@ page {
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 8rpx;
+  align-items: center;
+  text-align: center;
 }
 
 .role-title {
@@ -1132,9 +1135,10 @@ page {
 }
 
 .role-desc {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #616161;
-  line-height: 1.6;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .permission-options {

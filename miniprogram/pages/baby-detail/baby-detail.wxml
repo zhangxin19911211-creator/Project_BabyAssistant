@@ -86,6 +86,7 @@
     <block wx:if="{{currentTab === 'height'}}">
       <view class="chart-container">
         <ec-canvas id="height-dom-line" canvas-id="height-line" ec="{{ ecHeight }}"></ec-canvas>
+        <text class="chart-gesture-hint">双指捏合缩放，单指拖动平移</text>
       </view>
     </block>
 
@@ -93,6 +94,7 @@
     <block wx:if="{{currentTab === 'weight'}}">
       <view class="chart-container">
         <ec-canvas id="weight-dom-line" canvas-id="weight-line" ec="{{ ecWeight }}"></ec-canvas>
+        <text class="chart-gesture-hint">双指捏合缩放，单指拖动平移</text>
       </view>
     </block>
   </view>
