@@ -847,6 +847,15 @@ Page({
     this.setData({ selectedBabyIds: ids, selectedBabyId: ids.length === 1 ? ids[0] : null, selectedBabySet })
   },
 
+  onConfirmBabySelectionTap() {
+    const { selectedBabyIds } = this.data
+    if (!selectedBabyIds || selectedBabyIds.length === 0) {
+      wx.showToast({ title: '请选择至少一位宝宝', icon: 'none' })
+      return
+    }
+    this.confirmBabySelection()
+  },
+
   // 宝宝选择器 - 确认选择
   async confirmBabySelection() {
     const { selectedBabyIds } = this.data
