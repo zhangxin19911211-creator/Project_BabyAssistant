@@ -78,6 +78,26 @@ function generateRandomNickName() {
 // 默认头像URL（使用系统内置头像）
 const DEFAULT_AVATAR_URL = ''
 
+/** 删除宝宝上传的云存储头像（cloud://），忽略 http(s) 与空值 */
+async function deleteBabyCloudAvatarIfAny(avatarUrl) {
+  const u =
+    avatarUrl != null && typeof avatarUrl === 'string'
+      ? avatarUrl.trim()
+      : String(avatarUrl || '').trim()
+  if (!u || !u.startsWith('cloud://')) {
+    return
+  }
+  try {
+    await cloud.deleteFile({ fileList: [u] })
+  } catch (e) {
+    console.warn(
+      '[deleteBabyCloudAvatarIfAny]',
+      u.length > 72 ? u.slice(0, 72) + '…' : u,
+      (e && e.message) || e
+    )
+  }
+}
+
 // 云函数入口函数
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
@@ -670,6 +690,7 @@ exports.main = async (event, context) => {
           babyId: baby._id
         }).remove()
         await db.collection('babies').doc(baby._id).remove()
+        await deleteBabyCloudAvatarIfAny(baby.avatarUrl)
       }
       
       // 最后删除家庭
@@ -796,6 +817,8 @@ exports.main = async (event, context) => {
     
     // 处理删除宝宝的操作
     if (action === 'deleteBaby' && babyId) {
+      let avatarForCleanup = null
+
       // 使用事务确保原子性操作
       const result = await db.runTransaction(async transaction => {
         // 验证宝宝是否存在
@@ -803,24 +826,28 @@ exports.main = async (event, context) => {
         if (!baby.data) {
           throw new Error('宝宝不存在')
         }
-        
+
         // 验证用户是否有权限删除此宝宝（用户必须是宝宝所属家庭的一级助教）
         const family = await transaction.collection('families').doc(baby.data.familyId).get()
         if (!family.data || !family.data.members.some(member => member.openid === wxContext.OPENID && member.permission === 'guardian')) {
           throw new Error('只有一级助教才可以删除宝宝')
         }
-        
+
+        avatarForCleanup = baby.data.avatarUrl
+
         // 删除宝宝信息
         await transaction.collection('babies').doc(babyId).remove()
-        
+
         // 删除相关记录
-        await transaction.collection('records').where({ 
-          babyId: babyId 
+        await transaction.collection('records').where({
+          babyId: babyId
         }).remove()
-        
+
         return { success: true }
       })
-      
+
+      // 仅在事务提交成功后删云存储头像（失败则整个 main 抛错，不会执行到这里）
+      await deleteBabyCloudAvatarIfAny(avatarForCleanup)
       return result
     }
     
