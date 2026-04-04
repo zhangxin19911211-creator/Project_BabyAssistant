@@ -443,51 +443,6 @@
   max-height: 90vh;
 }
 
-/* 关注宝宝：scroll-view 必须带明确高度，否则真机上易把底部操作区挤出可视区域 */
-.baby-select-panel {
-  max-height: 88vh;
-}
-
-.baby-select-scroll {
-  width: 100%;
-  height: 52vh;
-  min-height: 280rpx;
-  max-height: 60vh;
-  padding: 0 32rpx 16rpx;
-  box-sizing: border-box;
-}
-
-.baby-select-actions {
-  flex-shrink: 0;
-  width: 100%;
-  padding: 16rpx 32rpx 8rpx;
-  background: rgba(255, 255, 255, 0.98);
-  border-top: 2rpx solid rgba(127, 209, 185, 0.22);
-}
-
-.btn-baby-select-submit {
-  width: 100%;
-  text-align: center;
-  padding: 26rpx 32rpx;
-  border-radius: 999rpx;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
-  box-shadow: 0 8rpx 24rpx var(--baby-shadow);
-  box-sizing: border-box;
-}
-
-.btn-baby-select-submit--disabled {
-  background: #bdbdbd;
-  box-shadow: none;
-  color: #fff;
-}
-
-.btn-baby-select-submit--hover {
-  opacity: 0.88;
-}
-
 @keyframes drawerUp {
   from {
     transform: translateY(100%);
@@ -563,7 +518,6 @@
 
 .drawer-scroll {
   flex: 1;
-  min-height: 0;
   max-height: 52vh;
   padding: 0 32rpx 16rpx;
   box-sizing: border-box;
@@ -583,7 +537,6 @@
 }
 
 .drawer-actions {
-  flex-shrink: 0;
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
@@ -1063,4 +1016,95 @@
   color: var(--baby-primary-dark);
   font-size: 28rpx;
   font-weight: 600;
+}
+
+/* ========== 关注宝宝全屏层（必须高于自定义 TabBar，且「确定」固定在 TabBar 上方）========== */
+.mood-fav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100000;
+  pointer-events: auto;
+}
+
+.mood-fav-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+/* 与 custom-tab-bar 高度一致：100rpx + 底部安全区 */
+.mood-fav-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(100rpx + env(safe-area-inset-bottom));
+  z-index: 100002;
+  padding: 12rpx 28rpx 16rpx;
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 2rpx solid rgba(127, 209, 185, 0.28);
+  box-shadow: 0 -8rpx 28rpx rgba(0, 0, 0, 0.1);
+}
+
+.mood-fav-btn {
+  width: 100%;
+  text-align: center;
+  padding: 26rpx 28rpx;
+  border-radius: 999rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--baby-primary) 0%, var(--baby-primary-dark) 100%);
+  box-shadow: 0 8rpx 24rpx var(--baby-shadow);
+  box-sizing: border-box;
+}
+
+.mood-fav-btn--disabled {
+  background: #bdbdbd;
+  box-shadow: none;
+}
+
+.mood-fav-btn--hover {
+  opacity: 0.9;
+}
+
+.mood-fav-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 8vh;
+  bottom: calc(100rpx + env(safe-area-inset-bottom) + 128rpx);
+  z-index: 100001;
+  background: linear-gradient(165deg, var(--baby-card) 0%, var(--baby-primary-light) 120%);
+  border-radius: 36rpx 36rpx 0 0;
+  border: 3rpx solid rgba(127, 209, 185, 0.28);
+  border-bottom: none;
+  box-shadow: 0 -12rpx 48rpx var(--baby-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mood-fav-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background: linear-gradient(90deg, var(--cmbyn-color-1), var(--cmbyn-color-4), var(--cat-color-2), var(--cat-color-3));
+  z-index: 2;
+}
+
+.mood-fav-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0 32rpx 16rpx;
+  box-sizing: border-box;
 }

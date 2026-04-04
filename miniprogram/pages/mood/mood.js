@@ -91,7 +91,7 @@ Page({
     })
   },
 
-  /** 首次选关注：仅一名宝宝时默认选中，避免「确定」灰显且无提示 */
+  /** 仅一名宝宝时默认勾选，避免未选无法点「确定」 */
   buildInitialFavoriteSelection(allBabiesList) {
     const list = allBabiesList || []
     if (list.length !== 1) {
@@ -263,7 +263,6 @@ Page({
           await this.loadBabyData(pick.babyId)
         }
       } else {
-        // 首次进入未选关注：弹出选择器（有家庭、有宝宝）
         const initial = this.buildInitialFavoriteSelection(allBabiesMapped)
         this.setData({
           allBabies: allBabiesMapped,
