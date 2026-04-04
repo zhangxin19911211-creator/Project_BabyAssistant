@@ -1,5 +1,6 @@
 {
   "usingComponents": {},
+  "enablePullDownRefresh": true,
   "navigationBarTitleText": "萌芽季",
   "navigationBarBackgroundColor": "#F6F6F6",
   "navigationBarTextStyle": "black"
