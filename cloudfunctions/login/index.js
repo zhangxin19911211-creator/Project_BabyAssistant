@@ -1338,11 +1338,21 @@ exports.main = async (event, context) => {
         throw new Error('只有一级助教才可以更新宝宝头像')
       }
 
+      const previousAvatar = baby.avatarUrl != null ? String(baby.avatarUrl).trim() : ''
+
       await db.collection('babies').doc(bid).update({
         data: {
           avatarUrl: url
         }
       })
+
+      if (
+        previousAvatar &&
+        previousAvatar.startsWith('cloud://') &&
+        previousAvatar !== url
+      ) {
+        await deleteBabyCloudAvatarIfAny(previousAvatar)
+      }
 
       return { success: true }
     }
