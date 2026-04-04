@@ -63,7 +63,8 @@
 
 4. **部署云函数**（在开发者工具中「上传并部署：云端安装依赖」）
    - `cloudfunctions/login`：登录、家庭/宝宝/记录、心情、反馈等业务入口
-   - `cloudfunctions/sendFeedbackEmail`：反馈邮件（SMTP，需配置环境变量，详见 `wiki`）
+   - `cloudfunctions/sendFeedbackEmail`：反馈邮件（SMTP，需配置环境变量，详见 `wiki`）；成功后会在 `feedback` 文档写入 `emailSentAt`
+   - `cloudfunctions/cleanupExpiredFeedback`：定时任务，**邮件发送成功满 30 天后**删除对应反馈记录与云存储图片；上传函数后须在右键菜单中 **上传触发器**（`config.json` 默认定时每天北京时间 4:00）
 
 5. **数据库集合**（在云开发控制台创建，名称需与代码一致）
    - `babies`、`records`、`users`、`families`、`inviteCodes`
@@ -83,8 +84,9 @@
 ```
 Project_BabyAssistant/        # 或你本地的克隆目录名
 ├── cloudfunctions/
-│   ├── login/                # 主业务云函数
-│   └── sendFeedbackEmail/    # 反馈邮件云函数
+│   ├── login/                     # 主业务云函数
+│   ├── sendFeedbackEmail/         # 反馈邮件云函数
+│   └── cleanupExpiredFeedback/    # 定时清理过期反馈（需上传触发器）
 ├── miniprogram/
 │   ├── components/
 │   │   └── ec-canvas/        # ECharts 图表组件

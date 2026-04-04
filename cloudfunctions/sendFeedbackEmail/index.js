@@ -241,6 +241,26 @@ exports.main = async (event) => {
       }
     }
 
+    // 仅成功送达后标记时间：定时任务 cleanupExpiredFeedback 在 emailSentAt 满 30 天后删库与云存储图
+    if (data._id != null && String(data._id).trim() !== '') {
+      try {
+        const db = cloud.database()
+        await db.collection('feedback').doc(String(data._id)).update({
+          data: {
+            emailSentAt: db.serverDate()
+          }
+        })
+      } catch (updateErr) {
+        console.error(
+          '[sendFeedbackEmail] emailSentAt update failed',
+          String(data._id),
+          redactSensitiveInText(
+            (updateErr && updateErr.message) || String(updateErr)
+          )
+        )
+      }
+    }
+
     return {
       success: true,
       message: '邮件已发送',

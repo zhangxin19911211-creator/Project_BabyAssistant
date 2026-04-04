@@ -1,0 +1,10 @@
+{
+  "name": "cleanupExpiredFeedback",
+  "version": "1.0.0",
+  "description": "Delete feedback docs and cloud files 30 days after email sent",
+  "main": "index.js",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}
