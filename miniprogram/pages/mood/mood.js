@@ -91,16 +91,6 @@ Page({
     })
   },
 
-  /** 仅一名宝宝时默认勾选，避免未选无法点「确定」 */
-  buildInitialFavoriteSelection(allBabiesList) {
-    const list = allBabiesList || []
-    if (list.length !== 1) {
-      return { ids: [], set: {} }
-    }
-    const id = list[0]._id
-    return { ids: [id], set: { [id]: true } }
-  },
-
   // 微信同声传译插件：语音识别管理器（需在 app.json 声明 WechatSI，并在公众平台添加插件）
   initRecordManager() {
     this._recordRecoManager = null
@@ -170,6 +160,7 @@ Page({
     this.setData({ loading: true })
     
     try {
+      api.invalidateMoodCaches()
       // 获取当前用户信息
       const app = getApp()
       const currentUser = app.globalData.userInfo
@@ -229,7 +220,6 @@ Page({
         }))
 
         if (babies.length === 0) {
-          const initial = this.buildInitialFavoriteSelection(allBabiesMapped)
           this.setData({
             babies: [],
             allBabies: allBabiesMapped,
@@ -237,9 +227,7 @@ Page({
             currentBabyId: null,
             currentBaby: null,
             calendarDays: [],
-            moods: [],
-            selectedBabyIds: initial.ids,
-            selectedBabySet: initial.set
+            moods: []
           })
           return
         }
@@ -263,13 +251,11 @@ Page({
           await this.loadBabyData(pick.babyId)
         }
       } else {
-        const initial = this.buildInitialFavoriteSelection(allBabiesMapped)
+        // 首次进入未选关注：弹出选择器（有家庭、有宝宝）
         this.setData({
           allBabies: allBabiesMapped,
           showBabySelector: true,
-          babies: [],
-          selectedBabyIds: initial.ids,
-          selectedBabySet: initial.set
+          babies: []
         })
       }
     } catch (error) {
@@ -844,15 +830,6 @@ Page({
     const selectedBabySet = {}
     ids.forEach(function (id) { selectedBabySet[id] = true })
     this.setData({ selectedBabyIds: ids, selectedBabyId: ids.length === 1 ? ids[0] : null, selectedBabySet })
-  },
-
-  onConfirmBabySelectionTap() {
-    const { selectedBabyIds } = this.data
-    if (!selectedBabyIds || selectedBabyIds.length === 0) {
-      wx.showToast({ title: '请选择至少一位宝宝', icon: 'none' })
-      return
-    }
-    this.confirmBabySelection()
   },
 
   // 宝宝选择器 - 确认选择

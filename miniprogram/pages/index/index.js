@@ -20,10 +20,9 @@ Page({
     })
   },
 
-  /** 下拉刷新：清掉宝宝/家庭列表本地缓存，避免真机仍显示旧列表（与模拟器 Storage 无关） */
+  /** 下拉强制拉最新（loadBabies 内已会先失效缓存） */
   async onPullDownRefresh() {
     try {
-      api.invalidateMoodCaches()
       await this.loadBabies()
     } finally {
       wx.stopPullDownRefresh()
@@ -32,6 +31,7 @@ Page({
 
   async loadBabies() {
     try {
+      api.invalidateMoodCaches()
       // 并行获取宝宝列表和家庭列表，减少等待时间
       const [babiesData, families] = await Promise.all([
         api.getBabies(),

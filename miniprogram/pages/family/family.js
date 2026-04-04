@@ -76,6 +76,7 @@ Page({
 
   async loadFamilyInfo() {
     try {
+      api.invalidateMoodCaches()
       const families = await api.getFamilies()
       
       // 检查全局用户信息是否存在

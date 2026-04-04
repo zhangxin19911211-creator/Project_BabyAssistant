@@ -25,6 +25,7 @@ Page({
 
   async checkAddBabyPermission() {
     try {
+      api.invalidateMoodCaches()
       const families = await api.getFamilies()
       
       // 筛选出用户是一级助教 (guardian) 的家庭

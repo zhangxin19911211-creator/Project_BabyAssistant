@@ -2,9 +2,11 @@ const db = wx.cloud.database()
 const _ = db.command
 
 // ===== 缓存管理模块 =====
+// 说明：缓存仅存本机 Storage，其他设备/模拟器新增数据不会帮你清缓存。
+// 首页/心情/家庭等 onShow 会先 invalidateMoodCaches 再请求，避免多开模拟器长时间不一致。
 const CACHE_CONFIG = {
-  families: { key: 'cache_families', ttl: 5 * 60 * 1000 }, // 5 分钟
-  babies: { key: 'cache_babies', ttl: 5 * 60 * 1000 }
+  families: { key: 'cache_families', ttl: 90 * 1000 }, // 90s 兜底；主要依赖各页 onShow 主动失效
+  babies: { key: 'cache_babies', ttl: 90 * 1000 }
 }
 
 // 设置缓存
