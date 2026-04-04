@@ -443,6 +443,17 @@
   max-height: 90vh;
 }
 
+/* 关注宝宝抽屉：中间滚动区吃剩余高度，底部按钮始终贴在 sheet 内可见 */
+.drawer-sheet-baby-select {
+  max-height: 85vh;
+}
+
+.drawer-sheet-baby-select .drawer-scroll-tall {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 @keyframes drawerUp {
   from {
     transform: translateY(100%);
@@ -518,6 +529,7 @@
 
 .drawer-scroll {
   flex: 1;
+  min-height: 0;
   max-height: 52vh;
   padding: 0 32rpx 16rpx;
   box-sizing: border-box;
@@ -537,6 +549,7 @@
 }
 
 .drawer-actions {
+  flex-shrink: 0;
   display: flex;
   flex-direction: row;
   justify-content: flex-end;

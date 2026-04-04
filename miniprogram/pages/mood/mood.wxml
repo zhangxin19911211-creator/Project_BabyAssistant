@@ -118,9 +118,9 @@
   </view>
 </view>
 
-<!-- 底部抽屉：选择宝宝 -->
+<!-- 底部抽屉：选择宝宝（注意 sheet 内 flex+scroll 须配合 wxss 中 min-height:0，否则底部「确定」会被裁切） -->
 <view class="drawer-overlay" wx:if="{{showBabySelector}}" bindtap="closeBabySelector">
-  <view class="drawer-sheet" catchtap="preventBubble">
+  <view class="drawer-sheet drawer-sheet-baby-select" catchtap="preventBubble">
     <view class="drawer-grab"></view>
     <view class="drawer-topline"></view>
     <view class="drawer-head">
@@ -128,7 +128,7 @@
       <text class="drawer-sub">可多选，关注后在此记录心情</text>
     </view>
     <scroll-view scroll-y class="drawer-scroll drawer-scroll-tall" show-scrollbar="{{false}}">
-      <text class="selector-intro">请选择您要关注的宝宝：</text>
+      <text class="selector-intro">请选择您要关注的宝宝：点选头像可多选，完成后点底部「确定」保存。</text>
       <view class="selector-baby-list">
         <view 
           class="selector-baby-item {{selectedBabySet[item._id] ? 'selected' : ''}}" 
